@@ -1,0 +1,6 @@
+{
+  "name": "Immersive Portfolio UI",
+  "description": "A dark-themed immersive portfolio interface featuring spatial design, subtle atmospheric glows, technical typography, and dynamic CSS-based 3D visual representations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
