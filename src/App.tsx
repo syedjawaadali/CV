@@ -110,8 +110,11 @@ export default function App() {
       {/* Navigation Bar */}
       <nav className="relative z-20 flex items-center justify-between px-6 md:px-12 py-6 shrink-0">
         <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => setActiveTab('home')}>
-          <div className={`w-10 h-10 border-2 ${isDark ? 'border-white group-hover:bg-white group-hover:text-black' : 'border-slate-900 group-hover:bg-slate-900 group-hover:text-white'} flex items-center justify-center font-bold tracking-tighter italic transition-colors`}>SA</div>
-          <span className={`hidden sm:inline text-xs uppercase tracking-[0.3em] font-medium ${mutedTextClass} group-hover:opacity-100 transition-opacity`}>Portfolio / 2026</span>
+          <div className={`w-10 h-10 shrink-0 border-2 ${isDark ? 'border-white group-hover:bg-white group-hover:text-black' : 'border-slate-900 group-hover:bg-slate-900 group-hover:text-white'} flex items-center justify-center font-bold tracking-tighter italic transition-colors`}>SA</div>
+          <div className="flex flex-col">
+            <span className={`text-sm sm:text-xs uppercase tracking-[0.1em] sm:tracking-[0.3em] font-medium ${isDark ? 'text-white' : 'text-slate-900'} group-hover:text-blue-500 transition-colors`}>Syed Jawaad Ali</span>
+            <span className={`hidden sm:inline text-[9px] uppercase tracking-widest ${mutedTextClass}`}>Portfolio / 2026</span>
+          </div>
         </div>
         <div className={`flex items-center space-x-3 md:space-x-8 text-[10px] md:text-xs uppercase tracking-widest font-semibold`}>
           {TABS.slice(1).map((tab) => (
@@ -208,7 +211,7 @@ export default function App() {
       </main>
 
       {/* Bottom Bar: Tech Stack & Contact */}
-      <footer className="relative z-10 px-6 md:px-12 py-6 md:py-8 flex flex-col sm:flex-row sm:items-end justify-between shrink-0 gap-6">
+      <footer className="relative z-10 px-6 md:px-12 py-6 md:py-8 flex flex-col sm:flex-row sm:items-end justify-between shrink-0 gap-6 md:gap-6 pb-20 md:pb-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-12">
           <div className="space-y-2">
             <p className={`text-[9px] uppercase tracking-widest ${mutedTextClass}`}>Visualization</p>
@@ -228,10 +231,10 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-4 md:space-x-6">
-          <div className="text-right">
+        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto space-x-4 md:space-x-6 border-t border-white/10 sm:border-0 pt-4 sm:pt-0">
+          <div className="text-left sm:text-right">
             <p className={`text-[9px] md:text-[10px] uppercase tracking-widest ${mutedTextClass}`}>Get in touch</p>
-            <a href="mailto:syedjawaadali@gmail.com" className="text-sm md:text-lg font-light hover:text-blue-500 transition-colors">syedjawaadali@gmail.com</a>
+            <a href="mailto:syedjawaadali@gmail.com" className="text-xs sm:text-sm md:text-lg font-light hover:text-blue-500 transition-colors">syedjawaadali@gmail.com</a>
           </div>
           <a href="https://linkedin.com/in/syedjawaadali" target="_blank" rel="noreferrer" className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-500 transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] shrink-0">
             <svg className="w-4 h-4 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
@@ -240,7 +243,7 @@ export default function App() {
       </footer>
 
       {/* Pagination Indicators */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center space-x-6 z-20">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center space-x-6 z-20">
         {TABS.map((tab) => (
           <div key={tab} className="relative group">
             {/* Hit area for easier hovering */}
