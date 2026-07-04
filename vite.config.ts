@@ -1,14 +1,20 @@
-import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
+import {defineConfig} from 'vite';
 
-export default defineConfig({
-  // IMPORTANT: Replace this with your actual GitHub repository name!
-  // Example: if your repo is github.com/username/my-portfolio, use '/my-portfolio/'
-  base: '/CV/', 
-  plugins: [react()],
-  server: {
-    host: '0.0.0.0',
-    port: 3000,
-    allowedHosts: 'all'
-  }
+export default defineConfig(() => {
+  return {
+    base: './', // This line is required for GitHub Pages
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, '.'),
+      },
+    },
+    server: {
+      hmr: process.env.DISABLE_HMR !== 'true',
+      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+  };
 });
