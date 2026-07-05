@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/CV/', // Must have leading and trailing slashes
+    base: '/CV/', // Must have leading and trailing slashes for GitHub Pages
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
