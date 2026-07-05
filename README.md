@@ -2,7 +2,7 @@
 
 A sleek, modern, and interactive personal portfolio website built to showcase my professional journey, projects, and expertise in Data Engineering and Visualization.
 
-![Portfolio Preview](https://via.placeholder.com/1200x600?text=Syed+Jawaad+Ali+-+Portfolio) <!-- Replace with a link to an actual screenshot of your site -->
+![Portfolio Preview](https://github.com/syedjawaadali/CV/blob/main/Preview) <!-- Replace with a link to an actual screenshot of your site -->
 
 ## 🌟 Features
 
