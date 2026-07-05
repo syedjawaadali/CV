@@ -1,20 +1,38 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Syed Jawaad Ali | Personal Portfolio
 
-# Run and deploy your AI Studio app
+A sleek, modern, and interactive personal portfolio website built to showcase my professional journey, projects, and expertise in Data Engineering and Visualization.
 
-This contains everything you need to run your app locally.
+![Portfolio Preview](https://via.placeholder.com/1200x600?text=Syed+Jawaad+Ali+-+Portfolio) <!-- Replace with a link to an actual screenshot of your site -->
 
-View your app in AI Studio: https://ai.studio/apps/944a6b7f-d606-418a-a48a-a7222b9758bc
+## 🌟 Features
 
-## Run Locally
+- **Modern Tech Stack**: Built with React, TypeScript, and Vite for blazing-fast performance.
+- **Sleek Styling**: Styled entirely with Tailwind CSS for a highly responsive, mobile-first design.
+- **Fluid Animations**: Smooth page transitions, hover effects, and component animations powered by Framer Motion.
+- **Interactive UI**: Custom-built navigation with swipe gesture support for mobile devices.
+- **Responsive Design**: Carefully crafted to look flawless across desktops, tablets, and mobile screens.
 
-**Prerequisites:**  Node.js
+## 🛠️ Built With
 
+- **[React](https://reactjs.org/)** - Core UI Library
+- **[TypeScript](https://www.typescriptlang.org/)** - Static Typing
+- **[Vite](https://vitejs.dev/)** - Next Generation Frontend Tooling
+- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS Framework
+- **[Framer Motion](https://www.framer.com/motion/)** - Production-ready Animation Library
+- **[Lucide React](https://lucide.dev/)** - Beautiful & Consistent Icons
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🚀 Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+
+Ensure you have Node.js and npm installed on your machine.
+- Node.js (v18 or higher recommended)
+- npm
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/your-repo-name.git
