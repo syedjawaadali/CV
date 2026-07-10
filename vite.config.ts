@@ -1,11 +1,11 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { defineConfig } from 'vite';
+import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/CV/', // Must match your GitHub repository name exactly
+    base: '/CV/', // Must have leading and trailing slashes for GitHub Pages
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
