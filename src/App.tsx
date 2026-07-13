@@ -65,10 +65,10 @@ function Preloader({ onComplete }: { onComplete: () => void }) {
       transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
       className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center overflow-hidden"
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="text-[100px] md:text-[180px] font-display font-bold tracking-tighter leading-none text-white"
+        className="text-hero font-display font-bold text-white"
       >
         {count}%
       </motion.div>
@@ -197,14 +197,14 @@ function HeroSection() {
           <span className="font-mono text-cyan-400 uppercase tracking-widest text-sm md:text-base font-bold">Syed Jawaad Ali</span>
         </div>
         
-        <h1 className="text-5xl sm:text-7xl md:text-[110px] lg:text-[140px] font-display font-bold leading-[0.9] tracking-tighter mb-8 select-none drop-shadow-2xl">
+        <h1 className="text-display font-display font-bold mb-8 select-none drop-shadow-2xl">
           BUSINESS <br />
-          <span className="text-stroke italic pr-4 hover-target">INTELLIGENCE</span> <br />
+          <span className="text-gradient italic pr-4 hover-target">INTELLIGENCE</span> <br />
           EXPERT
         </h1>
-        
+
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-t border-white/20 pt-8 mt-12">
-          <p className="text-xl md:text-3xl text-zinc-200 max-w-3xl font-light leading-relaxed">
+          <p className="text-subhead text-zinc-200 max-w-3xl font-light">
             I architect scalable data pipelines and craft intuitive BI dashboards that turn complex datasets into actionable strategic insights.
           </p>
           <div className="flex flex-col items-start md:items-end font-mono text-sm text-zinc-400 uppercase tracking-widest">
@@ -225,7 +225,7 @@ function SectionHeader({ title, subtitle }: { title: string, subtitle: string })
         <div className="w-10 h-[2px] bg-cyan-500 rounded-full"></div>
         <span className="font-mono text-cyan-500 uppercase tracking-[0.3em] text-xs md:text-sm font-bold">{title}</span>
       </div>
-      <h2 className="text-4xl md:text-6xl font-display font-bold tracking-tighter text-white drop-shadow-lg">{subtitle}</h2>
+      <h2 className="text-h2 font-display font-bold text-white drop-shadow-lg">{subtitle}</h2>
     </div>
   );
 }
@@ -236,9 +236,9 @@ function IntroSection() {
     <ZoomSection id="about" className="py-24 md:py-40 px-6 md:px-12 relative">
       <SectionHeader title="01 // Profile" subtitle="Professional Summary." />
       <div className="max-w-5xl">
-        <p className="text-2xl md:text-4xl lg:text-5xl font-light leading-snug md:leading-tight text-zinc-300 drop-shadow-md">
-          With <span className="text-white font-medium bg-white/5 px-2 rounded-lg">5+ years of experience</span> designing and automating data-driven dashboards across Telecom, Healthcare, Banking, and E-Commerce. 
-          I have a proven track record of translating complex datasets into <span className="text-cyan-400 italic font-display font-medium">actionable insights</span> that drive strategic decision-making.
+        <p className="text-lead font-light text-zinc-300 drop-shadow-md">
+          With <span className="text-white font-medium bg-white/5 px-2 rounded-lg">5+ years of experience</span> designing and automating data-driven dashboards across Telecom, Healthcare, Banking, and E-Commerce.
+          I have a proven track record of translating complex datasets into <span className="text-gradient italic font-display font-medium">actionable insights</span> that drive strategic decision-making.
         </p>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 border-t border-white/20 pt-16">
@@ -255,7 +255,7 @@ function IntroSection() {
 function StatBox({ value, label }: { value: string, label: string }) {
   return (
     <div className="flex flex-col hover-target group">
-      <span className="text-5xl md:text-7xl font-display font-bold text-white mb-2 drop-shadow-lg group-hover:text-cyan-400 transition-colors">{value}</span>
+      <span className="text-stat font-display font-bold text-white mb-2 drop-shadow-lg group-hover:text-cyan-400 transition-colors">{value}</span>
       <span className="text-sm font-mono text-zinc-400 uppercase tracking-widest font-medium">{label}</span>
     </div>
   );
@@ -281,7 +281,7 @@ function SkillsSection() {
               <div className="mb-6 p-4 rounded-2xl bg-white/5 inline-block w-fit backdrop-blur-md border border-white/10">
                 {skill.icon}
               </div>
-              <h3 className="text-3xl font-display font-bold mb-6 text-white drop-shadow-md">{skill.category}</h3>
+              <h3 className="text-h3 font-display font-bold mb-6 text-white drop-shadow-md">{skill.category}</h3>
               <div className="flex flex-wrap gap-3 mt-auto">
                 {skill.items.split(', ').map(item => (
                   <span key={item} className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-sm md:text-base font-medium text-zinc-200 backdrop-blur-md shadow-inner">
@@ -401,7 +401,7 @@ function ExperienceSection() {
           >
             <div className="flex flex-col md:flex-row justify-between md:items-start mb-6 gap-4">
               <div>
-                <h3 className="text-2xl md:text-4xl font-display font-bold text-white group-hover:text-cyan-400 transition-colors drop-shadow-md">{exp.role}</h3>
+                <h3 className="text-h3 font-display font-bold text-white group-hover:text-cyan-400 transition-colors drop-shadow-md">{exp.role}</h3>
                 <div className="text-lg md:text-xl text-zinc-400 mt-3 flex items-center gap-2 font-medium">
                   <Building2 className="w-5 h-5 text-cyan-500" /> {exp.company}
                 </div>
@@ -413,7 +413,7 @@ function ExperienceSection() {
             </div>
             <ul className="space-y-3 mt-8">
               {exp.bullets.map((b, idx) => (
-                <li key={idx} className="text-zinc-200 text-base md:text-lg leading-relaxed flex items-start gap-4">
+                <li key={idx} className="text-zinc-200 text-body flex items-start gap-4">
                   <span className="text-cyan-500 mt-1.5 opacity-80 text-sm">◆</span>
                   <span>{b}</span>
                 </li>
@@ -504,8 +504,8 @@ function ProjectCard({ project, index }: { project: any, index: number }) {
               <ArrowUpRight className="w-5 h-5" />
             </div>
           </div>
-          <h3 className="text-3xl md:text-4xl font-display font-bold leading-tight mb-6 text-white drop-shadow-md">{project.title}</h3>
-          <p className="text-zinc-300 text-base md:text-lg leading-relaxed font-medium">{project.desc}</p>
+          <h3 className="text-h3 font-display font-bold mb-6 text-white drop-shadow-md">{project.title}</h3>
+          <p className="text-zinc-300 text-body font-medium">{project.desc}</p>
         </div>
         
         <div className="mt-8 border-t border-white/20 pt-6 relative z-10">
@@ -539,7 +539,7 @@ function EducationCertifications() {
                 <GraduationCap className="w-8 h-8 text-cyan-400" />
               </div>
               <div>
-                <h3 className="text-2xl md:text-3xl font-display font-bold mb-3 text-white drop-shadow-md">M.S. in Data Engineering & Information Management</h3>
+                <h3 className="text-h3 font-display font-bold mb-3 text-white drop-shadow-md">M.S. in Data Engineering & Information Management</h3>
                 <p className="text-zinc-300 mb-4 font-medium text-lg">NED University of Engineering and Technology</p>
                 <div className="flex flex-wrap gap-4 text-xs font-mono uppercase tracking-widest text-zinc-400 font-bold">
                   <span className="text-cyan-300 bg-cyan-900/30 px-3 py-1 rounded-md border border-cyan-500/30">CGPA: 3.4</span>
@@ -555,7 +555,7 @@ function EducationCertifications() {
                 <GraduationCap className="w-8 h-8 text-cyan-400" />
               </div>
               <div>
-                <h3 className="text-2xl md:text-3xl font-display font-bold mb-3 text-white drop-shadow-md">B.S. in Economics and Finance</h3>
+                <h3 className="text-h3 font-display font-bold mb-3 text-white drop-shadow-md">B.S. in Economics and Finance</h3>
                 <p className="text-zinc-300 mb-4 font-medium text-lg">NED University of Engineering and Technology</p>
                 <div className="flex flex-wrap gap-4 text-xs font-mono uppercase tracking-widest text-zinc-400 font-bold">
                   <span className="text-cyan-300 bg-cyan-900/30 px-3 py-1 rounded-md border border-cyan-500/30">CGPA: 3.3</span>
@@ -574,11 +574,11 @@ function EducationCertifications() {
               <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg">
                 <Award className="w-7 h-7 text-cyan-400" />
               </div>
-              <h3 className="text-4xl font-display font-bold text-white drop-shadow-md">Certifications</h3>
+              <h3 className="text-h3 font-display font-bold text-white drop-shadow-md">Certifications</h3>
             </div>
             <ul className="space-y-6 relative z-10">
               {certs.map((c, i) => (
-                <li key={i} className="flex items-start gap-4 text-lg md:text-xl text-zinc-200 font-medium">
+                <li key={i} className="flex items-start gap-4 text-body text-zinc-200 font-medium">
                   <div className="w-2.5 h-2.5 bg-cyan-500 rounded-full mt-2.5 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.8)]"></div>
                   {c}
                 </li>
@@ -627,7 +627,7 @@ function Footer() {
       {/* Top Accent Line */}
       <div className="absolute top-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-500/80 to-transparent"></div>
       
-      <h2 className="text-5xl sm:text-7xl md:text-[120px] lg:text-[180px] font-display font-bold tracking-tighter text-stroke opacity-60 mb-16 hover:opacity-100 hover:text-stroke-none transition-all duration-700 select-none cursor-default hover-target text-center">
+      <h2 className="text-hero font-display font-bold text-stroke opacity-60 mb-16 hover:opacity-100 transition-all duration-700 select-none cursor-default hover-target text-center">
         LET'S TALK.
       </h2>
       
