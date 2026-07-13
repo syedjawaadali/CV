@@ -1,15 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  /* Fluid type scale — smooth clamp() ramps replace hard px breakpoints.
+     Each token: clamp(min, preferred-vw, max) so nothing overflows on
+     mid-size screens and sizing grows continuously instead of in jumps. */
+  --text-display: clamp(2.75rem, 8.5vw, 8.5rem);   /* hero headline */
+  --text-hero: clamp(3rem, 12vw, 11rem);           /* preloader / footer statement */
+  --text-h2: clamp(2rem, 4.5vw, 3.75rem);          /* section titles */
+  --text-h3: clamp(1.375rem, 2.6vw, 2.25rem);      /* card / role titles */
+  --text-lead: clamp(1.375rem, 3.2vw, 2.5rem);     /* large lead paragraphs */
+  --text-stat: clamp(2.5rem, 5vw, 4rem);           /* stat numbers */
+  --text-body: clamp(1rem, 1.4vw, 1.125rem);       /* body copy */
+  --text-subhead: clamp(1.125rem, 2vw, 1.6rem);    /* hero sub paragraph */
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: #050505;
-  color: #ffffff;
+  color: #f5f5f5;
   overflow-x: hidden;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   cursor: none;
@@ -19,10 +36,38 @@ body {
   body { cursor: auto; }
 }
 
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* --- Fluid type utilities --- */
+.text-display  { font-size: var(--text-display); line-height: 0.92; letter-spacing: -0.03em; }
+.text-hero     { font-size: var(--text-hero); line-height: 0.9; letter-spacing: -0.04em; }
+.text-h2       { font-size: var(--text-h2); line-height: 1.02; letter-spacing: -0.025em; }
+.text-h3       { font-size: var(--text-h3); line-height: 1.1; letter-spacing: -0.015em; }
+.text-lead     { font-size: var(--text-lead); line-height: 1.25; }
+.text-stat     { font-size: var(--text-stat); line-height: 1; letter-spacing: -0.02em; }
+.text-body     { font-size: var(--text-body); line-height: 1.7; }
+.text-subhead  { font-size: var(--text-subhead); line-height: 1.5; }
+
 .glass-panel {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+}
+
+/* Gradient accent text for modern headline highlights */
+.text-gradient {
+  background: linear-gradient(120deg, #22d3ee 0%, #3b82f6 55%, #818cf8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .text-stroke {
@@ -51,4 +96,9 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 182, 212, 0.5); /* Cyan hover */
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.3);
+  color: #ffffff;
 }
