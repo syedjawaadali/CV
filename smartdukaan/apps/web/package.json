@@ -10,6 +10,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/ios": "^6.2.1",
     "@hookform/resolvers": "^3.9.1",
     "@smartdukaan/shared": "*",
     "@tanstack/react-query": "^5.62.7",

@@ -11,6 +11,15 @@ import type { ApiErrorBody, AuthResponse } from '@smartdukaan/shared';
  *  - On a 401 we transparently try to refresh once, then retry the request.
  */
 
+/**
+ * API origin. Empty by default so the web app calls the SAME origin (`/api`),
+ * which the Vite dev server proxies in development. In a packaged native app
+ * (Capacitor) the webview runs from a local origin, so it must be pointed at an
+ * absolute, deployed API via VITE_API_BASE_URL at build time
+ * (e.g. https://api.smartdukaan.pk). No trailing slash.
+ */
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
 let accessToken: string | null = null;
 export function setAccessToken(token: string | null): void {
   accessToken = token;
@@ -48,7 +57,7 @@ async function tryRefresh(): Promise<boolean> {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
       try {
-        const res = await fetch('/api/auth/refresh', {
+        const res = await fetch(`${API_BASE}/api/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -73,7 +82,7 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
 
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     method: opts.method ?? 'GET',
     headers,
     credentials: 'include',

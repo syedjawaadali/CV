@@ -174,6 +174,22 @@ exists; no dedicated screen yet), digital-payment gateway integration,
 WhatsApp/SMS, offline-first sync, and reporting exports. These are the natural
 next phases and the schema + module boundaries were designed to accommodate them.
 
+## Cross-platform (Android & iOS)
+
+The same React app is packaged into native Android and iOS apps with
+[Capacitor](https://capacitorjs.com) — one codebase for web + Android + iOS.
+Native projects live in `apps/web/android` and `apps/web/ios`. See
+[docs/MOBILE.md](docs/MOBILE.md) for building the APK/AAB and the iOS app, and
+note that a packaged app must be pointed at a **deployed** API via
+`VITE_API_BASE_URL` (the webview has no dev proxy).
+
+```bash
+cd apps/web
+VITE_API_BASE_URL="https://api.your-domain.pk" npm run build
+npx cap sync
+cd android && ./gradlew :app:assembleDebug   # → app/build/outputs/apk/debug/app-debug.apk
+```
+
 ## Deploying with Supabase
 
 No code changes are required — set `DATABASE_URL` to your Supabase connection
