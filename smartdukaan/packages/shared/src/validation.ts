@@ -84,6 +84,7 @@ export const createProductSchema = z.object({
   barcode: z.string().trim().max(64).nullable().optional(),
   category: z.string().trim().max(80).nullable().optional(),
   unit: z.string().trim().max(24).default('piece'),
+  imageUrl: z.string().trim().max(1_500_000).nullable().optional(),
   costPrice: money.default(0),
   sellingPrice: money,
   openingStock: quantity.optional(),

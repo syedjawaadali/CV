@@ -13,6 +13,7 @@ import { KhataPage } from './pages/Khata';
 import { CustomersPage } from './pages/Customers';
 import { ProductsPage } from './pages/Products';
 import { InventoryPage } from './pages/Inventory';
+import { RestockPage } from './pages/Restock';
 import { ExpensesPage } from './pages/Expenses';
 import { ClosingPage } from './pages/Closing';
 import { EmployeesPage } from './pages/Employees';
@@ -52,6 +53,7 @@ export function App() {
         <Route path="/customers" element={<Guard permission={PERMISSIONS.CUSTOMER_VIEW}><CustomersPage /></Guard>} />
         <Route path="/products" element={<Guard permission={PERMISSIONS.PRODUCT_VIEW}><ProductsPage /></Guard>} />
         <Route path="/inventory" element={<Guard permission={PERMISSIONS.INVENTORY_VIEW}><InventoryPage /></Guard>} />
+        <Route path="/restock" element={<Guard permission={PERMISSIONS.PRODUCT_VIEW}><RestockPage /></Guard>} />
         <Route path="/expenses" element={<Guard permission={PERMISSIONS.EXPENSE_MANAGE}><ExpensesPage /></Guard>} />
         <Route path="/closing" element={<Guard permission={PERMISSIONS.CLOSING_MANAGE}><ClosingPage /></Guard>} />
         <Route path="/employees" element={<Guard permission={PERMISSIONS.EMPLOYEE_MANAGE}><EmployeesPage /></Guard>} />

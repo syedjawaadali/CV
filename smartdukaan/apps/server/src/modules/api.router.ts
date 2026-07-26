@@ -13,6 +13,9 @@ import { purchaseRouter } from './purchases/purchases.routes.js';
 import { expenseRouter } from './expenses/expenses.routes.js';
 import { closingRouter } from './closing/closing.routes.js';
 import { dashboardRouter } from './dashboard/dashboard.routes.js';
+import { catalogRouter } from './catalog/catalog.routes.js';
+import { distributorRouter } from './distributors/distributors.routes.js';
+import { suggestionRouter } from './suggestions/suggestions.routes.js';
 
 /** Mounts all API routes under /api. Auth is public; everything else requires a session. */
 export const apiRouter = Router();
@@ -33,3 +36,6 @@ apiRouter.use('/purchases', purchaseRouter);
 apiRouter.use('/expenses', expenseRouter);
 apiRouter.use('/closing', closingRouter);
 apiRouter.use('/dashboard', dashboardRouter);
+apiRouter.use('/catalog', catalogRouter);
+apiRouter.use('/distributors', distributorRouter);
+apiRouter.use('/suggestions', suggestionRouter);

@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Pencil } from 'lucide-react';
-import type { Paginated, Product } from '@smartdukaan/shared';
+import { Plus, Pencil, ScanLine, Camera, Package } from 'lucide-react';
+import type { CatalogEntry, Paginated, Product } from '@smartdukaan/shared';
 import { createProductSchema, updateProductSchema, PERMISSIONS } from '@smartdukaan/shared';
 import { api, ApiError } from '../lib/api';
 import { money, qty, toRupees } from '../lib/format';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../auth/AuthContext';
+import { scanBarcode, takePhoto } from '../lib/native';
 import {
   Badge, Button, EmptyState, ErrorState, Field, Input, Loading, Modal, useToast,
 } from '../components/ui';
@@ -48,6 +49,9 @@ export function ProductsPage() {
               const low = Number(p.stockQty) <= Number(p.lowStockThreshold);
               return (
                 <div key={p.id} className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-0">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400">
+                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-10 w-10 object-cover" /> : <Package className="h-5 w-5" />}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">
                       {p.name}{p.nameUr && <span className="ms-2 font-urdu text-slate-500">{p.nameUr}</span>}
@@ -93,16 +97,19 @@ export function ProductsPage() {
 
 interface FormValues {
   name: string; nameUr?: string | null; barcode?: string | null; category?: string | null;
-  unit: string; costPrice: number; sellingPrice: number; openingStock?: number; lowStockThreshold: number;
+  unit: string; imageUrl?: string | null; costPrice: number; sellingPrice: number;
+  openingStock?: number; lowStockThreshold: number;
 }
 
 function ProductForm({ product, onClose, onSaved }: {
   product: Product | null; onClose: () => void; onSaved: () => void;
 }) {
   const { t } = useI18n();
+  const toast = useToast();
   const [formError, setFormError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
   const isEdit = !!product;
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, setError, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(isEdit ? updateProductSchema : createProductSchema),
     defaultValues: {
       name: product?.name ?? '',
@@ -110,12 +117,38 @@ function ProductForm({ product, onClose, onSaved }: {
       barcode: product?.barcode ?? '',
       category: product?.category ?? '',
       unit: product?.unit ?? 'piece',
+      imageUrl: product?.imageUrl ?? '',
       costPrice: product ? toRupees(product.costPriceMinor) : 0,
       sellingPrice: product ? toRupees(product.sellingPriceMinor) : 0,
       openingStock: 0,
       lowStockThreshold: product ? Number(product.lowStockThreshold) : 0,
     },
   });
+
+  const imageUrl = watch('imageUrl');
+
+  // Scan a barcode into the form and auto-fill from the shared catalog.
+  async function handleScan() {
+    setScanning(true);
+    try {
+      const code = await scanBarcode();
+      if (!code) { toast.push(t('scan_not_supported'), 'error'); return; }
+      setValue('barcode', code, { shouldDirty: true });
+      try {
+        const entry = await api.get<CatalogEntry>(`/catalog/${encodeURIComponent(code)}`);
+        if (!watch('name')) setValue('name', entry.name);
+        if (entry.nameUr && !watch('nameUr')) setValue('nameUr', entry.nameUr);
+        if (entry.category && !watch('category')) setValue('category', entry.category);
+        if (entry.defaultUnit) setValue('unit', entry.defaultUnit);
+        toast.push(t('found_in_catalog'));
+      } catch { /* unknown barcode — retailer names it, contributed on save */ }
+    } finally { setScanning(false); }
+  }
+
+  async function handlePhoto() {
+    const dataUrl = await takePhoto();
+    if (dataUrl) setValue('imageUrl', dataUrl, { shouldDirty: true });
+  }
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
@@ -125,6 +158,7 @@ function ProductForm({ product, onClose, onSaved }: {
       barcode: values.barcode || null,
       category: values.category || null,
       unit: values.unit,
+      imageUrl: values.imageUrl || null,
       costPrice: Number(values.costPrice),
       sellingPrice: Number(values.sellingPrice),
       lowStockThreshold: Number(values.lowStockThreshold),
@@ -137,6 +171,13 @@ function ProductForm({ product, onClose, onSaved }: {
           ...base,
           ...(values.openingStock && Number(values.openingStock) > 0 ? { openingStock: Number(values.openingStock) } : {}),
         });
+      }
+      // Share any named barcode with every other shop (best-effort).
+      if (values.barcode) {
+        void api.post('/catalog', {
+          barcode: values.barcode, name: values.name, nameUr: values.nameUr || null,
+          category: values.category || null, unit: values.unit,
+        }).catch(() => undefined);
       }
       onSaved();
     } catch (err) {
@@ -184,9 +225,29 @@ function ProductForm({ product, onClose, onSaved }: {
             <Input {...register('category')} />
           </Field>
           <Field label={t('barcode')} error={errors.barcode?.message}>
-            <Input inputMode="numeric" {...register('barcode')} />
+            <div className="flex gap-2">
+              <Input inputMode="numeric" className="min-w-0 flex-1" {...register('barcode')} />
+              <Button type="button" variant="secondary" loading={scanning} onClick={() => void handleScan()} title={t('scan_barcode')}>
+                <ScanLine className="h-5 w-5" />
+              </Button>
+            </div>
           </Field>
         </div>
+        <Field label={t('product_photo')}>
+          <div className="flex items-center gap-3">
+            <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400">
+              {imageUrl ? <img src={imageUrl} alt="" className="h-16 w-16 object-cover" /> : <Camera className="h-6 w-6" />}
+            </div>
+            <Button type="button" variant="secondary" onClick={() => void handlePhoto()}>
+              <Camera className="h-4 w-4" /> {t('take_photo')}
+            </Button>
+            {imageUrl && (
+              <button type="button" onClick={() => setValue('imageUrl', '', { shouldDirty: true })} className="text-sm text-slate-500 hover:text-red-600">
+                {t('cancel')}
+              </button>
+            )}
+          </div>
+        </Field>
         {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</p>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>{t('cancel')}</Button>

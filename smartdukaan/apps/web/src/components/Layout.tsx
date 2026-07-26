@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3, Boxes, ClipboardCheck, LogOut, Menu, Package, Receipt,
-  ShoppingCart, Store, Users, UsersRound, Wallet, X, Languages,
+  ShoppingCart, Store, Users, UsersRound, Wallet, X, Languages, Truck,
 } from 'lucide-react';
 import { PERMISSIONS, type Permission } from '@smartdukaan/shared';
 import { useAuth } from '../auth/AuthContext';
@@ -19,6 +19,7 @@ const NAV: NavItem[] = [
   { to: '/customers', label: 'nav_customers', icon: Users, permission: PERMISSIONS.CUSTOMER_VIEW },
   { to: '/products', label: 'nav_products', icon: Package, permission: PERMISSIONS.PRODUCT_VIEW },
   { to: '/inventory', label: 'nav_inventory', icon: Boxes, permission: PERMISSIONS.INVENTORY_VIEW },
+  { to: '/restock', label: 'nav_restock', icon: Truck, permission: PERMISSIONS.PRODUCT_VIEW },
   { to: '/expenses', label: 'nav_expenses', icon: Wallet, permission: PERMISSIONS.EXPENSE_MANAGE },
   { to: '/closing', label: 'nav_closing', icon: ClipboardCheck, permission: PERMISSIONS.CLOSING_MANAGE },
   { to: '/employees', label: 'nav_employees', icon: UsersRound, permission: PERMISSIONS.EMPLOYEE_MANAGE },

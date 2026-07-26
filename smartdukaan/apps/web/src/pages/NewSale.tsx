@@ -1,18 +1,25 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, ShoppingCart } from 'lucide-react';
-import type { Customer, Paginated, Product, Sale } from '@smartdukaan/shared';
+import { Plus, Trash2, ShoppingCart, ScanLine, Mic } from 'lucide-react';
+import type { CatalogEntry, Customer, Paginated, Product, Sale } from '@smartdukaan/shared';
 import { toMinor } from '@smartdukaan/shared';
 import { api, ApiError } from '../lib/api';
 import { money, qty } from '../lib/format';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../auth/AuthContext';
 import {
-  Badge, Button, EmptyState, Field, Input, Loading, Select, useToast,
+  Badge, Button, EmptyState, Field, Input, Loading, Modal, Select, useToast,
 } from '../components/ui';
 import { PERMISSIONS } from '@smartdukaan/shared';
+import { scanBarcode, listenOnce } from '../lib/native';
+import { parseVoiceOrder } from '../lib/voiceParse';
 
 interface Line { productId: string; name: string; unitPrice: number; quantity: number; stock: number }
+
+interface QuickAdd {
+  barcode: string; name: string; nameUr: string; category: string; unit: string;
+  sellingPrice: string; openingStock: string; fromCatalog: boolean;
+}
 
 export function NewSalePage() {
   const { t, lang } = useI18n();
@@ -30,6 +37,9 @@ export function NewSalePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSale, setLastSale] = useState<Sale | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [quickAdd, setQuickAdd] = useState<QuickAdd | null>(null);
 
   const products = useQuery({
     queryKey: ['products', 'for-sale'],
@@ -66,6 +76,81 @@ export function NewSalePage() {
   }
   function removeLine(id: string) {
     setLines((prev) => prev.filter((l) => l.productId !== id));
+  }
+
+  function addOrIncrement(product: Product, quantity: number) {
+    setLines((prev) => {
+      const found = prev.find((l) => l.productId === product.id);
+      if (found) {
+        return prev.map((l) =>
+          l.productId === product.id ? { ...l, quantity: l.quantity + quantity } : l);
+      }
+      return [...prev, {
+        productId: product.id, name: product.name,
+        unitPrice: product.sellingPriceMinor / 100, quantity, stock: Number(product.stockQty),
+      }];
+    });
+  }
+
+  // --- Barcode scan: cart if known, else offer quick-add from shared catalog.
+  async function handleScan() {
+    setScanning(true);
+    try {
+      const code = await scanBarcode();
+      if (!code) { toast.push(t('scan_not_supported'), 'error'); return; }
+      const existing = (products.data?.data ?? []).find((p) => p.barcode === code);
+      if (existing) { addOrIncrement(existing, 1); toast.push(existing.name); return; }
+      let entry: CatalogEntry | null = null;
+      try { entry = await api.get<CatalogEntry>(`/catalog/${encodeURIComponent(code)}`); } catch { entry = null; }
+      setQuickAdd({
+        barcode: code, name: entry?.name ?? '', nameUr: entry?.nameUr ?? '',
+        category: entry?.category ?? '', unit: entry?.defaultUnit ?? 'piece',
+        sellingPrice: '', openingStock: '', fromCatalog: !!entry,
+      });
+    } finally { setScanning(false); }
+  }
+
+  // --- Voice order: speak items, match against the shop's products.
+  async function handleVoice() {
+    setListening(true);
+    try {
+      const transcript = await listenOnce(lang === 'ur' ? 'ur-PK' : 'en-US');
+      if (!transcript) { toast.push(t('voice_not_supported'), 'error'); return; }
+      const parsed = parseVoiceOrder(transcript, products.data?.data ?? []);
+      if (parsed.length === 0) {
+        toast.push(`${t('heard')}: “${transcript}” — ${t('nothing_recognized')}`, 'error');
+        return;
+      }
+      for (const { product, quantity } of parsed) addOrIncrement(product, quantity);
+      toast.push(`${t('added_items')}: ${parsed.map((p) => p.product.name).join(', ')}`);
+    } finally { setListening(false); }
+  }
+
+  async function submitQuickAdd() {
+    if (!quickAdd) return;
+    const price = Number(quickAdd.sellingPrice);
+    if (!quickAdd.name.trim()) { toast.push(t('required'), 'error'); return; }
+    if (!(price > 0)) { toast.push(t('set_price_to_add'), 'error'); return; }
+    try {
+      const opening = Number(quickAdd.openingStock);
+      const product = await api.post<Product>('/products', {
+        name: quickAdd.name.trim(), nameUr: quickAdd.nameUr || null, barcode: quickAdd.barcode,
+        category: quickAdd.category || null, unit: quickAdd.unit || 'piece',
+        sellingPrice: price, costPrice: 0, lowStockThreshold: 0,
+        ...(opening > 0 ? { openingStock: opening } : {}),
+      });
+      // Contribute the barcode to the shared catalog for every other shop.
+      void api.post('/catalog', {
+        barcode: quickAdd.barcode, name: quickAdd.name.trim(), nameUr: quickAdd.nameUr || null,
+        category: quickAdd.category || null, unit: quickAdd.unit || 'piece',
+      }).catch(() => undefined);
+      addOrIncrement(product, 1);
+      setQuickAdd(null);
+      toast.push(t('saved_to_catalog'));
+      void qc.invalidateQueries({ queryKey: ['products'] });
+    } catch (err) {
+      toast.push(err instanceof ApiError ? err.message : t('something_wrong'), 'error');
+    }
   }
 
   function resetForm() {
@@ -140,6 +225,16 @@ export function NewSalePage() {
           </div>
         ) : (
           <>
+            {/* Fast capture — scan a barcode or speak the order */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="secondary" loading={scanning} onClick={() => void handleScan()}>
+                <ScanLine className="h-5 w-5" /> {t('scan')}
+              </Button>
+              <Button variant="secondary" loading={listening} onClick={() => void handleVoice()}>
+                <Mic className="h-5 w-5" /> {listening ? t('listening') : t('voice_add')}
+              </Button>
+            </div>
+
             <div className="card">
               <Field label={t('add_product')}>
                 <Select
@@ -269,6 +364,43 @@ export function NewSalePage() {
           </div>
         )}
       </div>
+
+      {/* Quick-add product from a scanned barcode (+ shared-catalog autofill) */}
+      {quickAdd && (
+        <Modal open onClose={() => setQuickAdd(null)} title={t('add_to_products')}>
+          <div className="space-y-4">
+            <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+              <p className="text-slate-500">{t('barcode')}: <span className="font-mono text-slate-800">{quickAdd.barcode}</span></p>
+              <p className={quickAdd.fromCatalog ? 'mt-1 text-green-700' : 'mt-1 text-amber-700'}>
+                {quickAdd.fromCatalog ? `✓ ${t('found_in_catalog')}` : t('new_barcode_hint')}
+              </p>
+            </div>
+            <Field label={t('name')} required>
+              <Input value={quickAdd.name} onChange={(e) => setQuickAdd({ ...quickAdd, name: e.target.value })} />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('urdu_name')}>
+                <Input className="font-urdu" dir="rtl" value={quickAdd.nameUr} onChange={(e) => setQuickAdd({ ...quickAdd, nameUr: e.target.value })} />
+              </Field>
+              <Field label={t('unit')}>
+                <Input value={quickAdd.unit} onChange={(e) => setQuickAdd({ ...quickAdd, unit: e.target.value })} />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('selling_price')} required>
+                <Input inputMode="decimal" type="number" min="0" step="0.01" value={quickAdd.sellingPrice} onChange={(e) => setQuickAdd({ ...quickAdd, sellingPrice: e.target.value })} placeholder="0" />
+              </Field>
+              <Field label={t('opening_stock')}>
+                <Input inputMode="decimal" type="number" min="0" step="1" value={quickAdd.openingStock} onChange={(e) => setQuickAdd({ ...quickAdd, openingStock: e.target.value })} placeholder="0" />
+              </Field>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setQuickAdd(null)}>{t('cancel')}</Button>
+              <Button onClick={() => void submitQuickAdd()}>{t('add')}</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -1,8 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ArrowRight, Banknote, CreditCard, Smartphone,
-  TrendingUp, Wallet, Receipt,
+  TrendingUp, Wallet, Receipt, Volume2, VolumeX,
 } from 'lucide-react';
 import type { DashboardSummary } from '@smartdukaan/shared';
 import { PERMISSIONS } from '@smartdukaan/shared';
@@ -10,16 +11,43 @@ import { api } from '../lib/api';
 import { money } from '../lib/format';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../auth/AuthContext';
+import { speak, stopSpeaking } from '../lib/native';
 import { Badge, ErrorState, Loading } from '../components/ui';
 import type { StringKey } from '../i18n/strings';
+
+const VOICE_KEY = 'sd_voice_alerts';
 
 export function DashboardPage() {
   const { t, lang } = useI18n();
   const { can } = useAuth();
+  const [voiceOn, setVoiceOn] = useState(() => localStorage.getItem(VOICE_KEY) !== '0');
+  const spokenRef = useRef(false);
   const q = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.get<DashboardSummary>('/dashboard/summary'),
   });
+
+  const summary = q.data;
+  // Gentle Urdu voice reminder — spoken ONCE per visit, never repeated/looped.
+  useEffect(() => {
+    if (!summary || !voiceOn || spokenRef.current) return;
+    const parts: string[] = [];
+    if (summary.lowStockCount > 0) parts.push(`${summary.lowStockCount} چیزیں کم ہو رہی ہیں`);
+    if (summary.outstandingKhataMinor > 0) parts.push('اور اُدھار وصول کرنا باقی ہے');
+    if (parts.length === 0) return;
+    spokenRef.current = true;
+    const id = setTimeout(() => void speak(`${parts.join(' ')}۔`, 'ur-PK'), 600);
+    return () => clearTimeout(id);
+  }, [summary, voiceOn]);
+
+  function toggleVoice() {
+    setVoiceOn((on) => {
+      const next = !on;
+      localStorage.setItem(VOICE_KEY, next ? '1' : '0');
+      if (!next) stopSpeaking();
+      return next;
+    });
+  }
 
   if (q.isLoading) return <Loading />;
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
@@ -52,10 +80,34 @@ export function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-slate-500">{s.date}</p>
-        <Badge tone={s.closingDoneToday ? 'green' : 'amber'}>
-          {s.closingDoneToday ? t('day_closed') : t('day_open')}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleVoice}
+            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ring-1 ring-inset ${
+              voiceOn ? 'bg-brand-50 text-brand-700 ring-brand-200' : 'bg-slate-50 text-slate-500 ring-slate-200'
+            }`}
+            title={t('voice_alerts')}
+          >
+            {voiceOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            {voiceOn ? t('alerts_on') : t('alerts_off')}
+          </button>
+          <Badge tone={s.closingDoneToday ? 'green' : 'amber'}>
+            {s.closingDoneToday ? t('day_closed') : t('day_open')}
+          </Badge>
+        </div>
       </div>
+
+      {s.lowStockCount > 0 && (
+        <Link to="/restock" className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 transition-shadow hover:shadow-sm">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+          <p className="flex-1 text-sm text-amber-900">
+            <span className="font-semibold">{s.lowStockCount}</span> {t('low_stock_banner')}
+          </p>
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+            {t('reorder_now')} <ArrowRight className="h-3 w-3 rtl:rotate-180" />
+          </span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <div className="card col-span-2 bg-brand-700 text-white lg:col-span-1">

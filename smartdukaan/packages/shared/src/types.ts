@@ -36,12 +36,66 @@ export interface Product {
   barcode: string | null;
   category: string | null;
   unit: string;
+  imageUrl: string | null;
   costPriceMinor: number;
   sellingPriceMinor: number;
   stockQty: string; // numeric string to preserve precision
   lowStockThreshold: string;
   active: boolean;
   createdAt: string;
+}
+
+/** A crowd-sourced barcode → product entry, shared across all shops. */
+export interface CatalogEntry {
+  barcode: string;
+  name: string;
+  nameUr: string | null;
+  category: string | null;
+  defaultUnit: string;
+  imageUrl: string | null;
+  contributions: number;
+}
+
+/** FMCG distributor for one-tap restock. */
+export interface Distributor {
+  id: string;
+  name: string;
+  nameUr: string | null;
+  category: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  city: string | null;
+  sponsored: boolean;
+}
+
+/** The paid FMCG suggestion slot. */
+export interface SponsoredItem {
+  id: string;
+  brand: string;
+  name: string;
+  nameUr: string | null;
+  category: string | null;
+  message: string | null;
+  messageUr: string | null;
+  imageUrl: string | null;
+}
+
+/** A low-stock product surfaced for reordering. */
+export interface ReorderItem {
+  id: string;
+  name: string;
+  nameUr: string | null;
+  category: string | null;
+  unit: string;
+  stockQty: string;
+  lowStockThreshold: string;
+  imageUrl: string | null;
+}
+
+export interface Suggestions {
+  topCategory: string | null;
+  reorder: ReorderItem[];
+  sponsored: SponsoredItem | null;
 }
 
 export interface SaleItem {

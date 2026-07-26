@@ -6,7 +6,7 @@ import { decodeCursor, encodeCursor } from '../../lib/pagination.js';
 interface Ctx { tenantId: string; shopId: string; userId: string }
 
 const SELECT = `
-  id, name, name_ur AS "nameUr", barcode, category, unit,
+  id, name, name_ur AS "nameUr", barcode, category, unit, image_url AS "imageUrl",
   cost_price_minor AS "costPriceMinor",
   selling_price_minor AS "sellingPriceMinor",
   stock_qty::text AS "stockQty",
@@ -61,21 +61,22 @@ export async function createProduct(
   ctx: Ctx,
   input: {
     name: string; nameUr?: string | null; barcode?: string | null; category?: string | null;
-    unit: string; costPrice: number; sellingPrice: number; openingStock?: number;
-    lowStockThreshold: number;
+    unit: string; imageUrl?: string | null; costPrice: number; sellingPrice: number;
+    openingStock?: number; lowStockThreshold: number;
   },
 ) {
   return withTransaction(async (tx) => {
     const opening = input.openingStock ?? 0;
     const created = await tx.query(
       `INSERT INTO products
-         (tenant_id, shop_id, name, name_ur, barcode, category, unit,
+         (tenant_id, shop_id, name, name_ur, barcode, category, unit, image_url,
           cost_price_minor, selling_price_minor, stock_qty, low_stock_threshold)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING ${SELECT}`,
       [
         ctx.tenantId, ctx.shopId, input.name, input.nameUr ?? null, input.barcode ?? null,
-        input.category ?? null, input.unit, toMinor(input.costPrice), toMinor(input.sellingPrice),
+        input.category ?? null, input.unit, input.imageUrl ?? null,
+        toMinor(input.costPrice), toMinor(input.sellingPrice),
         opening, input.lowStockThreshold,
       ],
     );
@@ -96,7 +97,8 @@ export async function updateProduct(
   ctx: Ctx, id: string,
   input: {
     name?: string; nameUr?: string | null; barcode?: string | null; category?: string | null;
-    unit?: string; costPrice?: number; sellingPrice?: number; lowStockThreshold?: number;
+    unit?: string; imageUrl?: string | null; costPrice?: number; sellingPrice?: number;
+    lowStockThreshold?: number;
   },
 ) {
   const { rows } = await query(
@@ -106,15 +108,16 @@ export async function updateProduct(
        barcode = COALESCE($3, barcode),
        category = COALESCE($4, category),
        unit = COALESCE($5, unit),
-       cost_price_minor = COALESCE($6, cost_price_minor),
-       selling_price_minor = COALESCE($7, selling_price_minor),
-       low_stock_threshold = COALESCE($8, low_stock_threshold),
+       image_url = COALESCE($6, image_url),
+       cost_price_minor = COALESCE($7, cost_price_minor),
+       selling_price_minor = COALESCE($8, selling_price_minor),
+       low_stock_threshold = COALESCE($9, low_stock_threshold),
        updated_at = now()
-     WHERE id = $9 AND shop_id = $10
+     WHERE id = $10 AND shop_id = $11
      RETURNING ${SELECT}`,
     [
       input.name ?? null, input.nameUr ?? null, input.barcode ?? null, input.category ?? null,
-      input.unit ?? null,
+      input.unit ?? null, input.imageUrl ?? null,
       input.costPrice != null ? toMinor(input.costPrice) : null,
       input.sellingPrice != null ? toMinor(input.sellingPrice) : null,
       input.lowStockThreshold ?? null,
