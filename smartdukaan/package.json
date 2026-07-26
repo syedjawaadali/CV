@@ -1,0 +1,32 @@
+{
+  "name": "smartdukaan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Smart Dukaan — retailer commerce operating system (Retailer Core MVP)",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "npm run dev --workspace @smartdukaan/server",
+    "dev:web": "npm run dev --workspace @smartdukaan/web",
+    "build": "npm run build --workspace @smartdukaan/server && npm run build --workspace @smartdukaan/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run typecheck",
+    "test": "npm run test --workspace @smartdukaan/server --if-present && npm run test --workspace @smartdukaan/web --if-present",
+    "migrate": "npm run migrate --workspace @smartdukaan/server",
+    "migrate:test": "npm run migrate:test --workspace @smartdukaan/server",
+    "seed": "npm run seed --workspace @smartdukaan/server",
+    "db:reset": "npm run db:reset --workspace @smartdukaan/server",
+    "start": "npm run start --workspace @smartdukaan/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3"
+  }
+}
