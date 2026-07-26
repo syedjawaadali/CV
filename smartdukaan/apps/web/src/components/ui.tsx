@@ -1,5 +1,5 @@
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
+  createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useRef, useState,
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes,
 } from 'react';
 import { AlertCircle, CheckCircle2, Inbox, Loader2, X } from 'lucide-react';
@@ -41,12 +41,17 @@ export function Field({
   );
 }
 
-export const Input = (props: InputHTMLAttributes<HTMLInputElement>) => (
-  <input className="input" {...props} />
+// Forward refs so react-hook-form's register() can attach to the real element.
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input(props, ref) {
+    return <input ref={ref} className="input" {...props} />;
+  },
 );
 
-export const Select = ({ children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) => (
-  <select className="input" {...props}>{children}</select>
+export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
+  function Select({ children, ...props }, ref) {
+    return <select ref={ref} className="input" {...props}>{children}</select>;
+  },
 );
 
 export function Badge({ tone = 'slate', children }: { tone?: 'slate' | 'green' | 'red' | 'amber' | 'brand'; children: ReactNode }) {
