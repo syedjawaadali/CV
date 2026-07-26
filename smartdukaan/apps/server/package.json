@@ -6,8 +6,10 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsup src/server.ts --format esm --target node20 --clean --sourcemap",
+    "build": "tsup && cp -r src/db/migrations dist/migrations",
     "start": "node dist/server.js",
+    "start:migrate": "node dist/migrate.js",
+    "start:prod": "node dist/migrate.js && node dist/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "NODE_ENV=test vitest run",
     "test:watch": "NODE_ENV=test vitest",
