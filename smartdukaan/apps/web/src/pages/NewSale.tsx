@@ -11,7 +11,7 @@ import {
   Badge, Button, EmptyState, Field, Input, Loading, Modal, Select, useToast,
 } from '../components/ui';
 import { PERMISSIONS } from '@smartdukaan/shared';
-import { scanBarcode, listenOnce } from '../lib/native';
+import { scanBarcode, listenOnce, isNative } from '../lib/native';
 import { parseVoiceOrder } from '../lib/voiceParse';
 
 interface Line { productId: string; name: string; unitPrice: number; quantity: number; stock: number }
@@ -92,21 +92,38 @@ export function NewSalePage() {
     });
   }
 
-  // --- Barcode scan: cart if known, else offer quick-add from shared catalog.
+  // --- Supermarket-style scanning: each scan drops the item into the bill and
+  //     immediately reopens the scanner. Known barcodes (looked up on the
+  //     server, not just the cached page) add instantly; an unknown one stops
+  //     the loop and offers a one-time quick-add.
   async function handleScan() {
+    if (!isNative()) { toast.push(t('scan_not_supported'), 'error'); return; }
     setScanning(true);
     try {
-      const code = await scanBarcode();
-      if (!code) { toast.push(t('scan_not_supported'), 'error'); return; }
-      const existing = (products.data?.data ?? []).find((p) => p.barcode === code);
-      if (existing) { addOrIncrement(existing, 1); toast.push(existing.name); return; }
-      let entry: CatalogEntry | null = null;
-      try { entry = await api.get<CatalogEntry>(`/catalog/${encodeURIComponent(code)}`); } catch { entry = null; }
-      setQuickAdd({
-        barcode: code, name: entry?.name ?? '', nameUr: entry?.nameUr ?? '',
-        category: entry?.category ?? '', unit: entry?.defaultUnit ?? 'piece',
-        sellingPrice: '', openingStock: '', fromCatalog: !!entry,
-      });
+      for (;;) {
+        const code = await scanBarcode();
+        if (!code) break; // scanner closed by the user
+        let product: Product | null =
+          (products.data?.data ?? []).find((p) => p.barcode === code) ?? null;
+        if (!product) {
+          try { product = await api.get<Product>(`/products/barcode/${encodeURIComponent(code)}`); }
+          catch { product = null; }
+        }
+        if (product) {
+          addOrIncrement(product, 1);
+          toast.push(`${product.name} ${t('item_added')}`);
+          continue; // keep scanning
+        }
+        // Unknown barcode → quick-add (prefilled from the shared catalog).
+        let entry: CatalogEntry | null = null;
+        try { entry = await api.get<CatalogEntry>(`/catalog/${encodeURIComponent(code)}`); } catch { entry = null; }
+        setQuickAdd({
+          barcode: code, name: entry?.name ?? '', nameUr: entry?.nameUr ?? '',
+          category: entry?.category ?? '', unit: entry?.defaultUnit ?? 'piece',
+          sellingPrice: '', openingStock: '', fromCatalog: !!entry,
+        });
+        break;
+      }
     } finally { setScanning(false); }
   }
 
@@ -114,11 +131,17 @@ export function NewSalePage() {
   async function handleVoice() {
     setListening(true);
     try {
-      const transcript = await listenOnce(lang === 'ur' ? 'ur-PK' : 'en-US');
-      if (!transcript) { toast.push(t('voice_not_supported'), 'error'); return; }
-      const parsed = parseVoiceOrder(transcript, products.data?.data ?? []);
+      const r = await listenOnce(lang === 'ur' ? 'ur-PK' : 'en-US');
+      if ('error' in r) {
+        const msg = r.error === 'permission' ? t('voice_permission')
+          : r.error === 'unsupported' ? t('voice_not_supported')
+          : t('voice_unavailable');
+        toast.push(msg, 'error');
+        return;
+      }
+      const parsed = parseVoiceOrder(r.transcript, products.data?.data ?? []);
       if (parsed.length === 0) {
-        toast.push(`${t('heard')}: “${transcript}” — ${t('nothing_recognized')}`, 'error');
+        toast.push(`${t('heard')}: “${r.transcript}” — ${t('nothing_recognized')}`, 'error');
         return;
       }
       for (const { product, quantity } of parsed) addOrIncrement(product, quantity);
@@ -228,7 +251,7 @@ export function NewSalePage() {
             {/* Fast capture — scan a barcode or speak the order */}
             <div className="grid grid-cols-2 gap-3">
               <Button variant="secondary" loading={scanning} onClick={() => void handleScan()}>
-                <ScanLine className="h-5 w-5" /> {t('scan')}
+                <ScanLine className="h-5 w-5" /> {t('scan_items')}
               </Button>
               <Button variant="secondary" loading={listening} onClick={() => void handleVoice()}>
                 <Mic className="h-5 w-5" /> {listening ? t('listening') : t('voice_add')}

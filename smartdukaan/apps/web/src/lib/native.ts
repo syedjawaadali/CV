@@ -58,6 +58,25 @@ function ensureVoices(): Promise<void> {
 }
 
 export async function speak(text: string, lang = 'ur-PK'): Promise<void> {
+  // Native engine first — Android's in-app WebView often has no/blocked Web
+  // Speech Synthesis, which is why the browser API stayed silent on-device.
+  if (isNative()) {
+    try {
+      const { TextToSpeech } = await import('@capacitor-community/text-to-speech');
+      try { await TextToSpeech.stop(); } catch { /* nothing playing */ }
+      const attempts = [lang, 'ur', 'ur-IN', 'en-US'];
+      for (const l of attempts) {
+        try {
+          await TextToSpeech.speak({ text, lang: l, rate: 1.0, pitch: 1.0, volume: 1.0 });
+          return;
+        } catch { /* try the next locale */ }
+      }
+      try { await TextToSpeech.speak({ text, rate: 1.0 }); return; } catch { /* give up */ }
+      return;
+    } catch {
+      /* plugin unavailable — fall through to the web synth */
+    }
+  }
   try {
     const synth = window.speechSynthesis;
     if (!synth) return;
@@ -65,8 +84,7 @@ export async function speak(text: string, lang = 'ur-PK'): Promise<void> {
     synth.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
-    u.rate = 0.92;
-    u.pitch = 1;
+    u.rate = 0.95;
     const voice = synth
       .getVoices()
       .find((v) => v.lang?.toLowerCase().startsWith(lang.slice(0, 2).toLowerCase()));
@@ -82,6 +100,11 @@ export function stopSpeaking(): void {
     window.speechSynthesis?.cancel();
   } catch {
     /* no-op */
+  }
+  if (isNative()) {
+    import('@capacitor-community/text-to-speech')
+      .then((m) => m.TextToSpeech.stop().catch(() => undefined))
+      .catch(() => undefined);
   }
 }
 
@@ -127,26 +150,36 @@ function webListen(lang: string): Promise<string | null> {
   });
 }
 
-export async function listenOnce(lang = 'ur-PK'): Promise<string | null> {
-  if (!isNative()) return webListen(lang);
+export type VoiceResult =
+  | { transcript: string }
+  | { error: 'permission' | 'unavailable' | 'nomatch' | 'unsupported' };
+
+export async function listenOnce(lang = 'ur-PK'): Promise<VoiceResult> {
+  if (!isNative()) {
+    const t = await webListen(lang);
+    return t ? { transcript: t } : { error: 'unsupported' };
+  }
   try {
     const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
     const avail = await SpeechRecognition.available();
-    if (!avail.available) return null;
+    if (!avail.available) return { error: 'unavailable' };
     let perm = await SpeechRecognition.checkPermissions();
     if (perm.speechRecognition !== 'granted') {
       perm = await SpeechRecognition.requestPermissions();
     }
-    if (perm.speechRecognition !== 'granted') return null;
+    if (perm.speechRecognition !== 'granted') return { error: 'permission' };
+    // popup:true hands off to the system speech dialog — far more reliable
+    // across devices than the silent background recognizer.
     const res = await SpeechRecognition.start({
       language: lang,
-      maxResults: 1,
+      maxResults: 3,
       partialResults: false,
-      popup: false,
+      popup: true,
     });
-    return res.matches?.[0] ?? null;
+    const match = res?.matches?.[0];
+    return match ? { transcript: match } : { error: 'nomatch' };
   } catch {
-    return null;
+    return { error: 'unavailable' };
   }
 }
 

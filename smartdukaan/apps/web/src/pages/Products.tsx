@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Pencil, ScanLine, Camera, Package } from 'lucide-react';
+import { Plus, Pencil, ScanLine, Camera, Package, Mic } from 'lucide-react';
 import type { CatalogEntry, Paginated, Product } from '@smartdukaan/shared';
 import { createProductSchema, updateProductSchema, PERMISSIONS } from '@smartdukaan/shared';
 import { api, ApiError } from '../lib/api';
 import { money, qty, toRupees } from '../lib/format';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth } from '../auth/AuthContext';
-import { scanBarcode, takePhoto } from '../lib/native';
+import { scanBarcode, takePhoto, listenOnce, isNative } from '../lib/native';
 import {
   Badge, Button, EmptyState, ErrorState, Field, Input, Loading, Modal, useToast,
 } from '../components/ui';
@@ -104,10 +104,11 @@ interface FormValues {
 function ProductForm({ product, onClose, onSaved }: {
   product: Product | null; onClose: () => void; onSaved: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const toast = useToast();
   const [formError, setFormError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [listening, setListening] = useState(false);
   const isEdit = !!product;
   const { register, handleSubmit, setError, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(isEdit ? updateProductSchema : createProductSchema),
@@ -127,12 +128,30 @@ function ProductForm({ product, onClose, onSaved }: {
 
   const imageUrl = watch('imageUrl');
 
+  // Dictate the product name (and Urdu name) by voice.
+  async function handleVoiceName() {
+    setListening(true);
+    try {
+      const r = await listenOnce(lang === 'ur' ? 'ur-PK' : 'en-US');
+      if ('error' in r) {
+        const msg = r.error === 'permission' ? t('voice_permission')
+          : r.error === 'unsupported' ? t('voice_not_supported')
+          : t('voice_unavailable');
+        toast.push(msg, 'error');
+        return;
+      }
+      if (lang === 'ur') setValue('nameUr', r.transcript, { shouldDirty: true });
+      setValue('name', r.transcript, { shouldDirty: true });
+    } finally { setListening(false); }
+  }
+
   // Scan a barcode into the form and auto-fill from the shared catalog.
   async function handleScan() {
+    if (!isNative()) { toast.push(t('scan_not_supported'), 'error'); return; }
     setScanning(true);
     try {
       const code = await scanBarcode();
-      if (!code) { toast.push(t('scan_not_supported'), 'error'); return; }
+      if (!code) return; // scanner cancelled
       setValue('barcode', code, { shouldDirty: true });
       try {
         const entry = await api.get<CatalogEntry>(`/catalog/${encodeURIComponent(code)}`);
@@ -192,7 +211,12 @@ function ProductForm({ product, onClose, onSaved }: {
     <Modal open onClose={onClose} title={isEdit ? t('edit_product') : t('new_product')}>
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <Field label={t('name')} error={errors.name?.message} required>
-          <Input {...register('name')} />
+          <div className="flex gap-2">
+            <Input className="min-w-0 flex-1" {...register('name')} />
+            <Button type="button" variant="secondary" loading={listening} onClick={() => void handleVoiceName()} title={t('voice_add')}>
+              <Mic className="h-5 w-5" />
+            </Button>
+          </div>
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('urdu_name')} error={errors.nameUr?.message}>
