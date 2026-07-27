@@ -185,6 +185,66 @@ export interface DashboardSummary {
   closingDoneToday: boolean;
 }
 
+// --- Online ordering (buyer-facing) ----------------------------------------
+
+export interface StoreCustomer {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+export interface StoreAuthResponse {
+  token: string;
+  customer: StoreCustomer;
+}
+
+export interface StoreShop {
+  id: string;
+  name: string;
+  category: string | null;
+  address: string | null;
+  phone: string | null;
+}
+
+export interface StoreProduct {
+  id: string;
+  name: string;
+  nameUr: string | null;
+  category: string | null;
+  unit: string;
+  imageUrl: string | null;
+  sellingPriceMinor: number;
+  stockQty: string;
+}
+
+export type OrderStatus =
+  | 'pending_payment' | 'confirmed' | 'accepted' | 'ready'
+  | 'fulfilled' | 'rejected' | 'cancelled';
+
+export interface OrderItem {
+  id: string;
+  productId?: string | null;
+  name: string;
+  quantity: string;
+  unitPriceMinor: number;
+  lineTotalMinor: number;
+}
+
+export interface Order {
+  id: string;
+  shopId?: string;
+  shopName?: string;
+  customerName: string;
+  customerPhone: string;
+  status: OrderStatus;
+  subtotalMinor: number;
+  advanceMinor: number;
+  advancePaid: boolean;
+  note: string | null;
+  createdAt: string;
+  items: OrderItem[];
+}
+
 export interface Paginated<T> {
   data: T[];
   nextCursor: string | null;

@@ -14,10 +14,12 @@ import { CustomersPage } from './pages/Customers';
 import { ProductsPage } from './pages/Products';
 import { InventoryPage } from './pages/Inventory';
 import { RestockPage } from './pages/Restock';
+import { OrdersPage } from './pages/Orders';
 import { ExpensesPage } from './pages/Expenses';
 import { ClosingPage } from './pages/Closing';
 import { EmployeesPage } from './pages/Employees';
 import { SettingsPage } from './pages/Settings';
+import { StoreApp } from './store/StoreApp';
 
 /** Gate a route on a permission; fall back to the dashboard if not allowed. */
 function Guard({ permission, children }: { permission?: Permission; children: ReactElement }) {
@@ -26,7 +28,18 @@ function Guard({ permission, children }: { permission?: Permission; children: Re
   return children;
 }
 
+/** Top-level split: the buyer storefront (/store) has its own auth; everything
+ *  else is the retailer app. */
 export function App() {
+  return (
+    <Routes>
+      <Route path="/store/*" element={<StoreApp />} />
+      <Route path="/*" element={<RetailerApp />} />
+    </Routes>
+  );
+}
+
+function RetailerApp() {
   const { user, ready } = useAuth();
 
   if (!ready) {
@@ -49,6 +62,7 @@ export function App() {
         <Route path="/" element={<Guard permission={PERMISSIONS.REPORT_VIEW}><DashboardPage /></Guard>} />
         <Route path="/sales/new" element={<Guard permission={PERMISSIONS.SALE_CREATE}><NewSalePage /></Guard>} />
         <Route path="/sales" element={<Guard permission={PERMISSIONS.SALE_VIEW}><SalesPage /></Guard>} />
+        <Route path="/orders" element={<Guard permission={PERMISSIONS.SALE_VIEW}><OrdersPage /></Guard>} />
         <Route path="/khata" element={<Guard permission={PERMISSIONS.KHATA_VIEW}><KhataPage /></Guard>} />
         <Route path="/customers" element={<Guard permission={PERMISSIONS.CUSTOMER_VIEW}><CustomersPage /></Guard>} />
         <Route path="/products" element={<Guard permission={PERMISSIONS.PRODUCT_VIEW}><ProductsPage /></Guard>} />

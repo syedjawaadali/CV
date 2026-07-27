@@ -16,14 +16,20 @@ import { dashboardRouter } from './dashboard/dashboard.routes.js';
 import { catalogRouter } from './catalog/catalog.routes.js';
 import { distributorRouter } from './distributors/distributors.routes.js';
 import { suggestionRouter } from './suggestions/suggestions.routes.js';
+import { storeRouter } from './store/store.routes.js';
+import { orderRouter } from './orders/orders.routes.js';
 
 /** Mounts all API routes under /api. Auth is public; everything else requires a session. */
 export const apiRouter = Router();
 
 apiRouter.use('/auth', authRouter);
 
-// All routes below require authentication.
+// Buyer-facing storefront: its own customer-token auth, applied per-route inside.
+apiRouter.use('/store', storeRouter);
+
+// All routes below require retailer (staff) authentication.
 apiRouter.use(requireAuth);
+apiRouter.use('/orders', orderRouter);
 apiRouter.use('/shop', shopRouter);
 apiRouter.use('/employees', employeeRouter);
 apiRouter.use('/customers', customerRouter);

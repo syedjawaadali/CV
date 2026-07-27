@@ -46,6 +46,11 @@ export function LoginPage() {
         {t('no_account')}{' '}
         <Link to="/register" className="font-semibold text-brand-700 hover:underline">{t('create_account')}</Link>
       </p>
+      <div className="mt-4 border-t border-slate-100 pt-4 text-center">
+        <Link to="/store" className="text-sm font-semibold text-brand-700 hover:underline">
+          {t('customer_order_cta')}
+        </Link>
+      </div>
     </AuthShell>
   );
 }

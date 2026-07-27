@@ -35,6 +35,31 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
   }
 }
 
+/** Buyer-facing customer accounts get their own token type (`typ: 'customer'`). */
+export interface CustomerTokenPayload {
+  sub: string; // customer_accounts.id
+  typ: 'customer';
+}
+
+export function signCustomerToken(customerId: string): string {
+  return jwt.sign({ sub: customerId, typ: 'customer' }, env.jwtSecret, {
+    expiresIn: '30d',
+    algorithm: 'HS256',
+  });
+}
+
+export function verifyCustomerToken(token: string): CustomerTokenPayload {
+  try {
+    const decoded = jwt.verify(token, env.jwtSecret, { algorithms: ['HS256'] });
+    if (typeof decoded === 'string') throw new Error('unexpected token');
+    const payload = decoded as Partial<CustomerTokenPayload>;
+    if (payload.typ !== 'customer' || !payload.sub) throw new Error('not a customer token');
+    return payload as CustomerTokenPayload;
+  } catch {
+    throw unauthorized('Your session is invalid or has expired');
+  }
+}
+
 export function generateRefreshToken(): { token: string; hash: string } {
   const token = crypto.randomBytes(48).toString('base64url');
   return { token, hash: hashRefreshToken(token) };
