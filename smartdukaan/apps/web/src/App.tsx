@@ -15,6 +15,7 @@ import { ProductsPage } from './pages/Products';
 import { InventoryPage } from './pages/Inventory';
 import { RestockPage } from './pages/Restock';
 import { OrdersPage } from './pages/Orders';
+import { StorefrontPage } from './pages/Storefront';
 import { ExpensesPage } from './pages/Expenses';
 import { ClosingPage } from './pages/Closing';
 import { EmployeesPage } from './pages/Employees';
@@ -63,6 +64,7 @@ function RetailerApp() {
         <Route path="/sales/new" element={<Guard permission={PERMISSIONS.SALE_CREATE}><NewSalePage /></Guard>} />
         <Route path="/sales" element={<Guard permission={PERMISSIONS.SALE_VIEW}><SalesPage /></Guard>} />
         <Route path="/orders" element={<Guard permission={PERMISSIONS.SALE_VIEW}><OrdersPage /></Guard>} />
+        <Route path="/storefront" element={<Guard permission={PERMISSIONS.SALE_VIEW}><StorefrontPage /></Guard>} />
         <Route path="/khata" element={<Guard permission={PERMISSIONS.KHATA_VIEW}><KhataPage /></Guard>} />
         <Route path="/customers" element={<Guard permission={PERMISSIONS.CUSTOMER_VIEW}><CustomersPage /></Guard>} />
         <Route path="/products" element={<Guard permission={PERMISSIONS.PRODUCT_VIEW}><ProductsPage /></Guard>} />
