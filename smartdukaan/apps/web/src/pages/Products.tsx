@@ -97,7 +97,7 @@ export function ProductsPage() {
 
 interface FormValues {
   name: string; nameUr?: string | null; barcode?: string | null; category?: string | null;
-  unit: string; imageUrl?: string | null; costPrice: number; sellingPrice: number;
+  unit: string; imageUrl?: string | null; perishable?: boolean; costPrice: number; sellingPrice: number;
   openingStock?: number; lowStockThreshold: number;
 }
 
@@ -119,6 +119,7 @@ function ProductForm({ product, onClose, onSaved }: {
       category: product?.category ?? '',
       unit: product?.unit ?? 'piece',
       imageUrl: product?.imageUrl ?? '',
+      perishable: product?.perishable ?? false,
       costPrice: product ? toRupees(product.costPriceMinor) : 0,
       sellingPrice: product ? toRupees(product.sellingPriceMinor) : 0,
       openingStock: 0,
@@ -178,6 +179,7 @@ function ProductForm({ product, onClose, onSaved }: {
       category: values.category || null,
       unit: values.unit,
       imageUrl: values.imageUrl || null,
+      perishable: !!values.perishable,
       costPrice: Number(values.costPrice),
       sellingPrice: Number(values.sellingPrice),
       lowStockThreshold: Number(values.lowStockThreshold),
@@ -272,6 +274,10 @@ function ProductForm({ product, onClose, onSaved }: {
             )}
           </div>
         </Field>
+        <label className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+          <input type="checkbox" className="h-4 w-4" {...register('perishable')} />
+          <span>{t('perishable')} <span className="text-xs text-slate-400">— {t('perishable_hint')}</span></span>
+        </label>
         {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</p>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>{t('cancel')}</Button>

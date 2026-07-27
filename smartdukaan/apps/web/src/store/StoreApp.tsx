@@ -9,7 +9,7 @@ import {
 import type { Order, StoreProduct, StoreShop } from '@smartdukaan/shared';
 import { storeApi } from '../lib/storeApi';
 import { ApiError } from '../lib/api';
-import { money } from '../lib/format';
+import { money, formatDateTime } from '../lib/format';
 import { useI18n } from '../i18n/I18nContext';
 import { CustomerAuthProvider, useCustomerAuth } from './CustomerAuthContext';
 import {
@@ -141,7 +141,9 @@ function StoreShopPage() {
     () => products.reduce((sum, p) => sum + (cart.get(p.id) ?? 0) * p.sellingPriceMinor, 0),
     [products, cart],
   );
-  const advanceMinor = Math.round(totalMinor * 0.3);
+  const hasPerishable = products.some((p) => (cart.get(p.id) ?? 0) > 0 && p.perishable);
+  const advanceRate = hasPerishable ? 0.5 : 0.3;
+  const advanceMinor = Math.round(totalMinor * advanceRate);
   const itemCount = [...cart.values()].reduce((a, b) => a + b, 0);
 
   async function placeOrder() {
@@ -172,7 +174,10 @@ function StoreShopPage() {
                   {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-11 w-11 object-cover" /> : <Package className="h-5 w-5" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-slate-900">{lang === 'ur' && p.nameUr ? p.nameUr : p.name}</p>
+                  <p className="truncate font-medium text-slate-900">
+                    {lang === 'ur' && p.nameUr ? p.nameUr : p.name}
+                    {p.perishable && <span className="ms-2 align-middle"><Badge tone="red">{L('Perishable', 'جلد خراب')}</Badge></span>}
+                  </p>
                   <p className="text-sm text-brand-700">{money(p.sellingPriceMinor, lang)} <span className="text-xs text-slate-400">/ {p.unit}</span></p>
                 </div>
                 {qtyInCart === 0 ? (
@@ -195,7 +200,14 @@ function StoreShopPage() {
           <div className="mx-auto flex max-w-3xl items-center gap-3">
             <div className="flex-1">
               <p className="text-sm text-slate-500">{itemCount} {L('items', 'اشیاء')} · {L('Total', 'کل')} {money(totalMinor, lang)}</p>
-              <p className="text-xs font-medium text-amber-700">{L('Advance 30%', 'ایڈوانس ۳۰٪')}: {money(advanceMinor, lang)}</p>
+              <p className="text-xs font-medium text-amber-700">
+                {L('Advance', 'ایڈوانس')} {Math.round(advanceRate * 100)}%: {money(advanceMinor, lang)}
+              </p>
+              {hasPerishable && (
+                <p className="text-[11px] text-red-600">
+                  {L('Perishable — pick up within 4h, deposit non-refundable', 'جلد خراب — ۴ گھنٹے میں وصول کریں، ایڈوانس واپس نہیں')}
+                </p>
+              )}
             </div>
             <Button loading={placing} onClick={() => void placeOrder()}>
               <ShoppingCart className="h-4 w-4" /> {L('Place order', 'آرڈر کریں')}
@@ -261,7 +273,7 @@ function StoreAuthPage() {
 
 const STATUS_TONE: Record<string, 'slate' | 'green' | 'amber' | 'red' | 'brand'> = {
   pending_payment: 'amber', confirmed: 'brand', accepted: 'brand',
-  ready: 'green', fulfilled: 'green', rejected: 'red', cancelled: 'slate',
+  ready: 'green', fulfilled: 'green', rejected: 'red', cancelled: 'slate', expired: 'red',
 };
 
 function StoreOrdersPage() {
@@ -285,11 +297,13 @@ function StoreOrdersPage() {
   const statusLabel = (s: string) => {
     const en: Record<string, string> = {
       pending_payment: 'Awaiting advance', confirmed: 'Confirmed', accepted: 'Accepted',
-      ready: 'Ready for pickup', fulfilled: 'Completed', rejected: 'Rejected', cancelled: 'Cancelled',
+      ready: 'Ready for pickup', fulfilled: 'Completed', rejected: 'Rejected',
+      cancelled: 'Cancelled', expired: 'Reservation expired',
     };
     const ur: Record<string, string> = {
       pending_payment: 'ایڈوانس باقی', confirmed: 'تصدیق شدہ', accepted: 'قبول شدہ',
-      ready: 'تیار ہے', fulfilled: 'مکمل', rejected: 'مسترد', cancelled: 'منسوخ',
+      ready: 'تیار ہے', fulfilled: 'مکمل', rejected: 'مسترد',
+      cancelled: 'منسوخ', expired: 'ریزرویشن ختم',
     };
     return (lang === 'ur' ? ur : en)[s] ?? s;
   };
@@ -326,9 +340,15 @@ function StoreOrdersPage() {
             <span className="text-slate-500">{L('Total', 'کل')}</span>
             <span className="font-semibold">{money(o.subtotalMinor, lang)}</span>
           </div>
+          {o.hasPerishable && (
+            <p className="text-[11px] font-medium text-red-600">{L('Perishable — deposit non-refundable', 'جلد خراب — ایڈوانس واپس نہیں')}</p>
+          )}
+          {o.pickupBy && ['pending_payment', 'confirmed', 'accepted', 'ready'].includes(o.status) && (
+            <p className="text-xs text-slate-500">{L('Reserve until', 'وصولی کی مہلت')}: {formatDateTime(o.pickupBy)}</p>
+          )}
           {o.status === 'pending_payment' ? (
             <Button className="w-full" loading={paying === o.id} onClick={() => void payAdvance(o.id)}>
-              {L('Pay 30% advance', '۳۰٪ ایڈوانس ادا کریں')} · {money(o.advanceMinor, lang)}
+              {L('Pay', 'ادا کریں')} {Math.round(o.advanceRate * 100)}% {L('advance', 'ایڈوانس')} · {money(o.advanceMinor, lang)}
             </Button>
           ) : (
             <p className="text-xs text-slate-500">

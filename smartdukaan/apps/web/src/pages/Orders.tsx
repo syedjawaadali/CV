@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Phone, Clock } from 'lucide-react';
+import { Phone, Clock, AlertTriangle, Timer } from 'lucide-react';
 import type { Order, OrderStatus } from '@smartdukaan/shared';
 import { api, ApiError } from '../lib/api';
 import { money } from '../lib/format';
@@ -9,7 +9,7 @@ import { Badge, Button, EmptyState, ErrorState, Loading, useToast } from '../com
 
 const TONE: Record<OrderStatus, 'slate' | 'green' | 'amber' | 'red' | 'brand'> = {
   pending_payment: 'amber', confirmed: 'brand', accepted: 'brand',
-  ready: 'green', fulfilled: 'green', rejected: 'red', cancelled: 'slate',
+  ready: 'green', fulfilled: 'green', rejected: 'red', cancelled: 'slate', expired: 'red',
 };
 
 export function OrdersPage() {
@@ -39,10 +39,12 @@ export function OrdersPage() {
     const en: Record<OrderStatus, string> = {
       pending_payment: 'Awaiting advance', confirmed: 'New — confirmed', accepted: 'Accepted',
       ready: 'Ready', fulfilled: 'Completed', rejected: 'Rejected', cancelled: 'Cancelled',
+      expired: 'Expired (no-show)',
     };
     const ur: Record<OrderStatus, string> = {
       pending_payment: 'ایڈوانس باقی', confirmed: 'نیا — تصدیق شدہ', accepted: 'قبول شدہ',
       ready: 'تیار', fulfilled: 'مکمل', rejected: 'مسترد', cancelled: 'منسوخ',
+      expired: 'ختم (نہیں آیا)',
     };
     return (lang === 'ur' ? ur : en)[s];
   };
@@ -74,9 +76,20 @@ export function OrdersPage() {
             <span className="inline-flex items-center gap-1 text-xs text-slate-400"><Clock className="h-3 w-3" /> {formatDateTime(o.createdAt)}</span>
             <span className="font-semibold">{money(o.subtotalMinor, lang)}</span>
           </div>
-          <p className="text-xs text-slate-500">
-            {lang === 'ur' ? 'ایڈوانس' : 'Advance'} {money(o.advanceMinor, lang)} · {o.advancePaid ? (lang === 'ur' ? 'ادا شدہ' : 'paid') : (lang === 'ur' ? 'غیر ادا' : 'unpaid')}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+            <span>
+              {lang === 'ur' ? 'ایڈوانس' : 'Advance'} {Math.round(o.advanceRate * 100)}% · {money(o.advanceMinor, lang)} · {o.advancePaid ? (lang === 'ur' ? 'ادا شدہ' : 'paid') : (lang === 'ur' ? 'غیر ادا' : 'unpaid')}
+            </span>
+            {o.hasPerishable && <Badge tone="red">{lang === 'ur' ? 'جلد خراب' : 'Perishable'}</Badge>}
+            {o.pickupBy && ['confirmed', 'accepted', 'ready'].includes(o.status) && (
+              <span className="inline-flex items-center gap-1 text-amber-700"><Timer className="h-3 w-3" /> {lang === 'ur' ? 'مہلت' : 'pickup by'} {formatDateTime(o.pickupBy)}</span>
+            )}
+            {(o.customerNoShowCount ?? 0) > 0 && (
+              <span className="inline-flex items-center gap-1 font-medium text-red-600">
+                <AlertTriangle className="h-3 w-3" /> {o.customerNoShowCount} {lang === 'ur' ? 'دفعہ نہیں آیا' : 'past no-shows'}
+              </span>
+            )}
+          </div>
 
           {/* Retailer actions by state */}
           {o.status === 'confirmed' && (

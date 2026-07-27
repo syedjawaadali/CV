@@ -6,6 +6,7 @@ import { requirePermission } from '../../middleware/authorize.js';
 import { notFound } from '../../lib/errors.js';
 import { query } from '../../db/pool.js';
 import { writeAudit } from '../../lib/audit.js';
+import { expireOverdueOrders } from '../../lib/orders.js';
 
 /**
  * Retailer-facing order management for the online storefront. Staff see
@@ -16,7 +17,10 @@ export const orderRouter = Router();
 const ORDER_SELECT = `
   o.id, o.status, o.customer_name AS "customerName", o.customer_phone AS "customerPhone",
   o.subtotal_minor AS "subtotalMinor", o.advance_minor AS "advanceMinor",
-  o.advance_paid AS "advancePaid", o.note, o.created_at AS "createdAt"`;
+  o.advance_rate::float AS "advanceRate", o.advance_paid AS "advancePaid",
+  o.has_perishable AS "hasPerishable", o.pickup_by AS "pickupBy",
+  ca.no_show_count AS "customerNoShowCount",
+  o.note, o.created_at AS "createdAt"`;
 
 async function attachItems(orders: Array<{ id: string }>) {
   const ids = orders.map((o) => o.id);
@@ -40,8 +44,10 @@ orderRouter.get(
   '/',
   requirePermission(PERMISSIONS.SALE_VIEW),
   asyncHandler(async (req, res) => {
+    await expireOverdueOrders({ shopId: req.auth!.shopId });
     const { rows } = await query(
       `SELECT ${ORDER_SELECT} FROM orders o
+         JOIN customer_accounts ca ON ca.id = o.customer_account_id
         WHERE o.shop_id = $1 ORDER BY o.created_at DESC LIMIT 100`,
       [req.auth!.shopId],
     );

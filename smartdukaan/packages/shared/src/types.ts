@@ -37,6 +37,7 @@ export interface Product {
   category: string | null;
   unit: string;
   imageUrl: string | null;
+  perishable: boolean;
   costPriceMinor: number;
   sellingPriceMinor: number;
   stockQty: string; // numeric string to preserve precision
@@ -213,13 +214,14 @@ export interface StoreProduct {
   category: string | null;
   unit: string;
   imageUrl: string | null;
+  perishable: boolean;
   sellingPriceMinor: number;
   stockQty: string;
 }
 
 export type OrderStatus =
   | 'pending_payment' | 'confirmed' | 'accepted' | 'ready'
-  | 'fulfilled' | 'rejected' | 'cancelled';
+  | 'fulfilled' | 'rejected' | 'cancelled' | 'expired';
 
 export interface OrderItem {
   id: string;
@@ -239,9 +241,13 @@ export interface Order {
   status: OrderStatus;
   subtotalMinor: number;
   advanceMinor: number;
+  advanceRate: number;
   advancePaid: boolean;
+  hasPerishable: boolean;
+  pickupBy: string | null;
   note: string | null;
   createdAt: string;
+  customerNoShowCount?: number; // retailer view only
   items: OrderItem[];
 }
 

@@ -85,6 +85,7 @@ export const createProductSchema = z.object({
   category: z.string().trim().max(80).nullable().optional(),
   unit: z.string().trim().max(24).default('piece'),
   imageUrl: z.string().trim().max(1_500_000).nullable().optional(),
+  perishable: z.boolean().optional(),
   costPrice: money.default(0),
   sellingPrice: money,
   openingStock: quantity.optional(),

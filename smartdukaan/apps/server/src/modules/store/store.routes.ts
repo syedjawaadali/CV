@@ -6,6 +6,7 @@ import { query, withTransaction } from '../../db/pool.js';
 import { hashPassword, verifyPassword } from '../../lib/password.js';
 import { signCustomerToken } from '../../lib/jwt.js';
 import { requireCustomer } from '../../middleware/customerAuth.js';
+import { expireOverdueOrders } from '../../lib/orders.js';
 
 /**
  * Buyer-facing storefront API (foodpanda-style). Customers register with a
@@ -14,7 +15,12 @@ import { requireCustomer } from '../../middleware/customerAuth.js';
  */
 export const storeRouter = Router();
 
-const ADVANCE_RATE = 0.3;
+// Perishable orders take a bigger deposit and a short pickup window, because a
+// no-show wastes stock that can't be re-packed.
+const ADVANCE_RATE_DEFAULT = 0.3;
+const ADVANCE_RATE_PERISHABLE = 0.5;
+const PICKUP_HOURS_DEFAULT = 24;
+const PICKUP_HOURS_PERISHABLE = 4;
 
 /* ------------------------------------------------------------------- auth */
 
@@ -76,7 +82,7 @@ storeRouter.get('/shops', asyncHandler(async (_req, res) => {
 
 storeRouter.get('/shops/:shopId/products', asyncHandler(async (req, res) => {
   const { rows } = await query(
-    `SELECT id, name, name_ur AS "nameUr", category, unit, image_url AS "imageUrl",
+    `SELECT id, name, name_ur AS "nameUr", category, unit, image_url AS "imageUrl", perishable,
             selling_price_minor AS "sellingPriceMinor", stock_qty::text AS "stockQty"
        FROM products
       WHERE shop_id = $1 AND active
@@ -124,7 +130,9 @@ const ORDER_SELECT = `
   o.customer_account_id AS "customerAccountId", o.customer_name AS "customerName",
   o.customer_phone AS "customerPhone", o.status,
   o.subtotal_minor AS "subtotalMinor", o.advance_minor AS "advanceMinor",
-  o.advance_paid AS "advancePaid", o.note, o.created_at AS "createdAt"`;
+  o.advance_rate::float AS "advanceRate", o.advance_paid AS "advancePaid",
+  o.has_perishable AS "hasPerishable", o.pickup_by AS "pickupBy",
+  o.note, o.created_at AS "createdAt"`;
 
 async function orderWithItems(id: string) {
   const { rows } = await query(
@@ -142,8 +150,8 @@ storeRouter.post('/orders', requireCustomer, asyncHandler(async (req, res) => {
   const order = await withTransaction(async (tx) => {
     // Price every line from the server's product record — never trust the client.
     const ids = input.items.map((i) => i.productId);
-    const { rows: prods } = await tx.query<{ id: string; name: string; selling_price_minor: number }>(
-      `SELECT id, name, selling_price_minor FROM products
+    const { rows: prods } = await tx.query<{ id: string; name: string; selling_price_minor: number; perishable: boolean }>(
+      `SELECT id, name, selling_price_minor, perishable FROM products
         WHERE shop_id = $1 AND id = ANY($2::uuid[]) AND active`,
       [input.shopId, ids],
     );
@@ -151,22 +159,30 @@ storeRouter.post('/orders', requireCustomer, asyncHandler(async (req, res) => {
     if (byId.size === 0) throw businessRule('None of these items are available at this shop');
 
     let subtotal = 0;
+    let hasPerishable = false;
     const lines = input.items
       .filter((i) => byId.has(i.productId))
       .map((i) => {
         const p = byId.get(i.productId)!;
+        if (p.perishable) hasPerishable = true;
         const lineTotal = Math.round(p.selling_price_minor * i.quantity);
         subtotal += lineTotal;
         return { productId: p.id, name: p.name, quantity: i.quantity, unitPrice: p.selling_price_minor, lineTotal };
       });
-    const advance = Math.round(subtotal * ADVANCE_RATE);
+    const advanceRate = hasPerishable ? ADVANCE_RATE_PERISHABLE : ADVANCE_RATE_DEFAULT;
+    const advance = Math.round(subtotal * advanceRate);
+    const pickupHours = hasPerishable ? PICKUP_HOURS_PERISHABLE : PICKUP_HOURS_DEFAULT;
 
     const { rows: created } = await tx.query<{ id: string }>(
       `INSERT INTO orders
          (shop_id, customer_account_id, customer_name, customer_phone, status,
-          subtotal_minor, advance_minor, note)
-       VALUES ($1,$2,$3,$4,'pending_payment',$5,$6,$7) RETURNING id`,
-      [input.shopId, req.customer!.id, req.customer!.name, req.customer!.phone, subtotal, advance, input.note ?? null],
+          subtotal_minor, advance_minor, advance_rate, has_perishable, pickup_by, note)
+       VALUES ($1,$2,$3,$4,'pending_payment',$5,$6,$7,$8, now() + make_interval(hours => $9), $10)
+       RETURNING id`,
+      [
+        input.shopId, req.customer!.id, req.customer!.name, req.customer!.phone,
+        subtotal, advance, advanceRate, hasPerishable, pickupHours, input.note ?? null,
+      ],
     );
     const orderId = created[0]!.id;
     for (const l of lines) {
@@ -184,12 +200,14 @@ storeRouter.post('/orders', requireCustomer, asyncHandler(async (req, res) => {
 // Simulated 30% advance — flips advance_paid and confirms the order. A real
 // gateway (JazzCash/Easypaisa/Stripe) would authorize the charge here.
 storeRouter.post('/orders/:id/pay-advance', requireCustomer, asyncHandler(async (req, res) => {
+  await expireOverdueOrders({ customerId: req.customer!.id });
   const { rows } = await query<{ status: string }>(
     'SELECT status FROM orders WHERE id = $1 AND customer_account_id = $2',
     [req.params.id!, req.customer!.id],
   );
   const found = rows[0];
   if (!found) throw notFound('Order not found');
+  if (found.status === 'expired') throw businessRule('This reservation expired — please order again');
   if (found.status !== 'pending_payment') throw businessRule('This order is already confirmed');
   await query(
     `UPDATE orders SET status = 'confirmed', advance_paid = TRUE, advance_paid_at = now(), updated_at = now()
@@ -200,6 +218,7 @@ storeRouter.post('/orders/:id/pay-advance', requireCustomer, asyncHandler(async 
 }));
 
 storeRouter.get('/orders', requireCustomer, asyncHandler(async (req, res) => {
+  await expireOverdueOrders({ customerId: req.customer!.id });
   const { rows } = await query(
     `SELECT ${ORDER_SELECT} FROM orders o JOIN shops s ON s.id = o.shop_id
       WHERE o.customer_account_id = $1 ORDER BY o.created_at DESC LIMIT 100`,
