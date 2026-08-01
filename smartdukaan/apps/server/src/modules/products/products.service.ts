@@ -12,6 +12,9 @@ const SELECT = `
   selling_price_minor AS "sellingPriceMinor",
   stock_qty::text AS "stockQty",
   low_stock_threshold::text AS "lowStockThreshold",
+  catalog_match_status AS "catalogMatchStatus",
+  product_variant_id AS "productVariantId",
+  global_product_id AS "globalProductId",
   active, created_at AS "createdAt"`;
 
 export async function listProducts(

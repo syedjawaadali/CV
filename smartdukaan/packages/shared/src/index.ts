@@ -2,3 +2,6 @@ export * from './money.js';
 export * from './roles.js';
 export * from './types.js';
 export * from './validation.js';
+export * from './normalize.js';
+export * from './packsize.js';
+export * from './barcode.js';

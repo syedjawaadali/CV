@@ -55,6 +55,9 @@ export function ProductsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">
                       {p.name}{p.nameUr && <span className="ms-2 font-urdu text-slate-500">{p.nameUr}</span>}
+                      {p.catalogMatchStatus === 'confirmed' && (
+                        <span className="ms-2 align-middle"><Badge tone="brand">{t('catalog_matched')}</Badge></span>
+                      )}
                     </p>
                     <p className="text-xs text-slate-500">{money(p.sellingPriceMinor, lang)} · {p.unit}</p>
                   </div>

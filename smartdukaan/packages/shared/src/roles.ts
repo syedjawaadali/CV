@@ -46,6 +46,9 @@ export const PERMISSIONS = {
   CLOSING_MANAGE: 'closing:manage',
   REPORT_VIEW: 'report:view',
   PROFIT_VIEW: 'profit:view',
+  // Approving changes to the SHARED product catalog is an admin-level action.
+  // Ordinary staff never receive it; only the owner (platform-admin stand-in).
+  CATALOG_REVIEW: 'catalog:review',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

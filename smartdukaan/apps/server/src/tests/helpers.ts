@@ -5,6 +5,14 @@ import { pool } from '../db/pool.js';
 export const app = createApp();
 
 const TABLES = [
+  // Knowledge Base (Phase 2) — truncated first; most cascade from products anyway.
+  'catalog_review_candidates', 'recognition_confirmations', 'recognition_candidates',
+  'recognition_observations', 'price_observations', 'product_images', 'product_aliases',
+  'product_barcodes', 'packaging_versions', 'product_variants', 'global_products',
+  'catalog_sources', 'product_merges',
+  // Ordering (Phase earlier)
+  'order_items', 'orders', 'customer_accounts',
+  // Core
   'idempotency_keys', 'audit_logs', 'notifications', 'daily_closings', 'expenses',
   'purchase_items', 'purchases', 'suppliers', 'inventory_movements',
   'khata_transactions', 'sale_items', 'sales', 'products', 'customers',

@@ -44,6 +44,10 @@ export interface Product {
   lowStockThreshold: string;
   active: boolean;
   createdAt: string;
+  // Knowledge Base (Phase 2) — nullable until the product is matched to the catalog.
+  catalogMatchStatus?: 'unmatched' | 'suggested' | 'confirmed' | 'conflicted' | 'retailer_only';
+  productVariantId?: string | null;
+  globalProductId?: string | null;
 }
 
 /** A crowd-sourced barcode → product entry, shared across all shops. */
