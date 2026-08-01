@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Pencil, ScanLine, Camera, Package, Mic } from 'lucide-react';
+import { Plus, Pencil, ScanLine, Camera, Package, Mic, Sparkles } from 'lucide-react';
+import { RecognizeModal, type RecognizePrefill } from '../components/RecognizeModal';
 import type { CatalogEntry, Paginated, Product } from '@smartdukaan/shared';
 import { createProductSchema, updateProductSchema, PERMISSIONS } from '@smartdukaan/shared';
 import { api, ApiError } from '../lib/api';
@@ -22,6 +23,8 @@ export function ProductsPage() {
   const canManage = can(PERMISSIONS.PRODUCT_MANAGE);
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Product | null | 'new'>(null);
+  const [recognizeOpen, setRecognizeOpen] = useState(false);
+  const [prefill, setPrefill] = useState<RecognizePrefill | null>(null);
 
   const q = useInfiniteQuery({
     queryKey: ['products', 'list', search],
@@ -39,8 +42,22 @@ export function ProductsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <Input className="max-w-xs" placeholder={t('search')} value={search} onChange={(e) => setSearch(e.target.value)} />
-        {canManage && <Button onClick={() => setEditing('new')} className="ms-auto"><Plus className="h-4 w-4" /> {t('new_product')}</Button>}
+        {canManage && (
+          <>
+            <Button variant="secondary" onClick={() => setRecognizeOpen(true)} className="ms-auto">
+              <Sparkles className="h-4 w-4" /> {t('read_package')}
+            </Button>
+            <Button onClick={() => { setPrefill(null); setEditing('new'); }}><Plus className="h-4 w-4" /> {t('new_product')}</Button>
+          </>
+        )}
       </div>
+
+      {recognizeOpen && (
+        <RecognizeModal
+          onClose={() => setRecognizeOpen(false)}
+          onCreateNew={(p) => { setRecognizeOpen(false); setPrefill(p); setEditing('new'); }}
+        />
+      )}
 
       {q.isLoading ? <Loading /> : q.isError ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> : (
         products.length === 0 ? <EmptyState /> : (
@@ -86,6 +103,7 @@ export function ProductsPage() {
       {editing && (
         <ProductForm
           product={editing === 'new' ? null : editing}
+          prefill={editing === 'new' ? prefill : null}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
@@ -104,8 +122,8 @@ interface FormValues {
   openingStock?: number; lowStockThreshold: number;
 }
 
-function ProductForm({ product, onClose, onSaved }: {
-  product: Product | null; onClose: () => void; onSaved: () => void;
+function ProductForm({ product, prefill, onClose, onSaved }: {
+  product: Product | null; prefill?: RecognizePrefill | null; onClose: () => void; onSaved: () => void;
 }) {
   const { t, lang } = useI18n();
   const toast = useToast();
@@ -116,15 +134,15 @@ function ProductForm({ product, onClose, onSaved }: {
   const { register, handleSubmit, setError, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(isEdit ? updateProductSchema : createProductSchema),
     defaultValues: {
-      name: product?.name ?? '',
+      name: product?.name ?? prefill?.name ?? '',
       nameUr: product?.nameUr ?? '',
-      barcode: product?.barcode ?? '',
-      category: product?.category ?? '',
+      barcode: product?.barcode ?? prefill?.barcode ?? '',
+      category: product?.category ?? prefill?.category ?? '',
       unit: product?.unit ?? 'piece',
       imageUrl: product?.imageUrl ?? '',
       perishable: product?.perishable ?? false,
       costPrice: product ? toRupees(product.costPriceMinor) : 0,
-      sellingPrice: product ? toRupees(product.sellingPriceMinor) : 0,
+      sellingPrice: product ? toRupees(product.sellingPriceMinor) : (prefill?.sellingPrice ?? 0),
       openingStock: 0,
       lowStockThreshold: product ? Number(product.lowStockThreshold) : 0,
     },

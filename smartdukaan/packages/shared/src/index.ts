@@ -5,3 +5,5 @@ export * from './validation.js';
 export * from './normalize.js';
 export * from './packsize.js';
 export * from './barcode.js';
+export * from './recognition.js';
+export * from './scoring.js';

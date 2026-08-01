@@ -17,6 +17,12 @@ export const features = {
   catalogSuggestions: flag('FEATURE_CATALOG_SUGGESTIONS', true),
   productPriceHistory: flag('FEATURE_PRODUCT_PRICE_HISTORY', true),
   packagingVersions: flag('FEATURE_PACKAGING_VERSIONS', true),
+  // Phase 3 — local OCR + hybrid recognition (fall back to Phase 2 barcode flow).
+  localOcr: flag('FEATURE_LOCAL_OCR', true),
+  hybridProductScan: flag('FEATURE_HYBRID_PRODUCT_SCAN', true),
+  packagingChangeDetection: flag('FEATURE_PACKAGING_CHANGE_DETECTION', true),
+  printedPriceDetection: flag('FEATURE_PRINTED_PRICE_DETECTION', true),
+  offlineProductRecognition: flag('FEATURE_OFFLINE_PRODUCT_RECOGNITION', true),
 } as const;
 
 export type FeatureName = keyof typeof features;

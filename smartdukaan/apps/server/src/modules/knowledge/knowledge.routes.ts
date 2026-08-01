@@ -8,6 +8,7 @@ import { writeAudit } from '../../lib/audit.js';
 import { query } from '../../db/pool.js';
 import { features, type FeatureName } from '../../config/features.js';
 import { lookupBarcode } from './barcodeLookup.service.js';
+import { recognize } from './recognition.service.js';
 import {
   searchCatalog, getVariantDetail, linkProduct, unlinkProduct,
   recordPriceObservation, getPriceHistory, recentProducts,
@@ -40,6 +41,45 @@ knowledgeRouter.get(
   requirePermission(PERMISSIONS.PRODUCT_VIEW),
   asyncHandler(async (req, res) => {
     ok(res, await lookupBarcode(ctxOf(req), req.params.barcode!));
+  }),
+);
+
+/* ------------------------------------------------ hybrid recognition (P3) */
+
+const recognizeSchema = z.object({
+  barcode: z.string().trim().max(64).nullable().optional(),
+  ocrText: z.string().max(5000).nullable().optional(),
+  offline: z.boolean().optional(),
+  deviceId: z.string().trim().max(120).nullable().optional(),
+  ocrProvider: z.string().trim().max(60).nullable().optional(),
+  ocrProviderVersion: z.string().trim().max(40).nullable().optional(),
+  processingMs: z.number().int().min(0).max(600000).nullable().optional(),
+  imageQuality: z.enum(['good', 'acceptable', 'retake', 'cannot_process']).nullable().optional(),
+}).refine((v) => !!v.barcode || !!v.ocrText, { message: 'Provide a barcode or package text', path: ['ocrText'] });
+
+knowledgeRouter.post(
+  '/recognize',
+  requireFeature('hybridProductScan'),
+  requirePermission(PERMISSIONS.PRODUCT_VIEW),
+  asyncHandler(async (req, res) => {
+    const input = parseBody(recognizeSchema, req);
+    ok(res, await recognize(ctxOf(req), input), 201);
+  }),
+);
+
+knowledgeRouter.get(
+  '/recent-scans',
+  requirePermission(PERMISSIONS.PRODUCT_VIEW),
+  asyncHandler(async (req, res) => {
+    const { rows } = await query(
+      `SELECT o.id, o.observation_type AS "type", o.barcode_value AS "barcode",
+              o.confidence_category AS "confidence", o.recommended_action AS "recommendedAction",
+              o.status, o.candidate_count AS "candidateCount", o.offline, o.created_at AS "createdAt"
+         FROM recognition_observations o
+        WHERE o.shop_id = $1 ORDER BY o.created_at DESC LIMIT 30`,
+      [req.auth!.shopId],
+    );
+    ok(res, { data: rows });
   }),
 );
 
