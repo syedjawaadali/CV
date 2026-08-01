@@ -7,6 +7,7 @@ import {
 import { query, withTransaction } from '../../db/pool.js';
 import { features } from '../../config/features.js';
 import { findVisualCandidates } from '../cloud/fingerprint.service.js';
+import { learningSignalsFor } from './feedback.service.js';
 
 /**
  * Local-first product recognition (Phase 3). Combines barcode evidence with
@@ -174,6 +175,19 @@ export async function recognize(ctx: Ctx, input: RecognizeInput) {
         productVariantId: p.product_variant_id, displayName: p.name, brand: null,
         packSummary: p.unit, baseQuantity: null, baseUnit: null, verificationStatus: null, ev,
       });
+    }
+  }
+
+  // --- Self-learning signals (Phase 7): confirmed/rejected local feedback ------
+  // Retailer-scoped; nudges ranking without overriding any contradiction.
+  const retailerIds = candidates.map((c) => c.retailerProductId).filter((x): x is string => !!x);
+  if (retailerIds.length > 0) {
+    const signals = await learningSignalsFor(ctx.shopId, retailerIds);
+    for (const c of candidates) {
+      if (!c.retailerProductId) continue;
+      const v = signals.get(c.retailerProductId);
+      if (v?.locallyPreferred) c.ev.locallyPreferred = true;
+      if (v?.locallyRejected) c.ev.locallyRejected = true;
     }
   }
 

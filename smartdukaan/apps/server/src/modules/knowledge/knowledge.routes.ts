@@ -9,6 +9,7 @@ import { query } from '../../db/pool.js';
 import { features, type FeatureName } from '../../config/features.js';
 import { lookupBarcode } from './barcodeLookup.service.js';
 import { recognize } from './recognition.service.js';
+import { recordFeedback, listFeedback, deleteFeedback } from './feedback.service.js';
 import {
   searchCatalog, getVariantDetail, linkProduct, unlinkProduct,
   recordPriceObservation, getPriceHistory, recentProducts,
@@ -86,6 +87,41 @@ knowledgeRouter.get(
       [req.auth!.shopId],
     );
     ok(res, { data: rows });
+  }),
+);
+
+/* -------------------------------------------- self-learning feedback (P7) */
+
+const feedbackSchema = z.object({
+  productId: z.string().uuid(),
+  type: z.enum(['confirmed', 'rejected']),
+  input: z.string().max(200).nullable().optional(),
+});
+
+knowledgeRouter.post(
+  '/feedback',
+  requirePermission(PERMISSIONS.PRODUCT_VIEW),
+  asyncHandler(async (req, res) => {
+    const body = parseBody(feedbackSchema, req);
+    await recordFeedback(ctxOf(req), body.productId, body.type, body.input);
+    ok(res, { recorded: true }, 201);
+  }),
+);
+
+knowledgeRouter.get(
+  '/feedback',
+  requirePermission(PERMISSIONS.PRODUCT_VIEW),
+  asyncHandler(async (req, res) => ok(res, { data: await listFeedback({ shopId: req.auth!.shopId }) })),
+);
+
+// Correction / reset — delete one product's signal, or all (reset personalization).
+knowledgeRouter.post(
+  '/feedback/delete',
+  requirePermission(PERMISSIONS.PRODUCT_MANAGE),
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ productId: z.string().uuid().nullable().optional() }), req);
+    const removed = await deleteFeedback(ctxOf(req), body.productId ?? null);
+    ok(res, { removed });
   }),
 );
 

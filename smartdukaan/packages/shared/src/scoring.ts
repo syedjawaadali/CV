@@ -45,6 +45,8 @@ export const RECOGNITION_CONFIG: RecognitionConfig = {
     perceptual_near: 30,
     perceptual_similar: 15,
     embedding_similar: 20, // multiplied by similarity 0..1
+    // Phase 7 — self-learning support (weak; never overrides a contradiction).
+    locally_preferred: 22,
   },
   negatives: {
     conflicting_barcode: -1000,
@@ -61,6 +63,8 @@ export const RECOGNITION_CONFIG: RecognitionConfig = {
     incompatible_embedding_version: -20,
     low_quality_image: -15,
     very_old_reference: -10,
+    // Phase 7 — negative local feedback (small; a preference signal, not a conflict).
+    locally_rejected: -18,
   },
   thresholds: { exact: 95, high: 70, medium: 40 },
   candidateLimit: 10,
@@ -102,6 +106,9 @@ export interface CandidateEvidence {
   incompatibleEmbeddingVersion?: boolean;
   lowQualityImage?: boolean;
   veryOldReference?: boolean;
+  // Phase 7 — self-learning support/feedback (never overrides a contradiction).
+  locallyPreferred?: boolean;
+  locallyRejected?: boolean;
 }
 
 export interface MatchReason { code: string; label: string; weight: number }
@@ -144,6 +151,7 @@ export function scoreCandidate(ev: CandidateEvidence, cfg: RecognitionConfig = R
   add(ev.unitsPerPackMatch, 'units_per_pack', 'Pack count matches', cfg.weights.units_per_pack_match);
   add(ev.manufacturerMatch, 'manufacturer', 'Manufacturer matches', cfg.weights.manufacturer_match);
   add(ev.recentlyUsed, 'recent', 'You used this product recently', cfg.weights.recently_used);
+  add(ev.locallyPreferred, 'learned', 'You confirmed this before', cfg.weights.locally_preferred);
   add(ev.existingCatalogLink, 'catalog_link', 'Already linked in your catalog', cfg.weights.existing_catalog_link);
   add(ev.currentPackagingMatch, 'packaging_current', 'Matches the current packaging', cfg.weights.current_packaging_match);
   add(ev.printedPriceConsistent, 'price_consistent', 'Printed price is consistent', cfg.weights.printed_price_consistent);
@@ -175,6 +183,12 @@ export function scoreCandidate(ev: CandidateEvidence, cfg: RecognitionConfig = R
   sub(ev.retired, 'retired', 'This product is retired', N.retired_product);
   sub(ev.inactiveBarcode, 'inactive_barcode', 'This barcode is inactive', N.inactive_barcode);
   sub(ev.conflictedRecord, 'conflicted_record', 'This catalog record is conflicted', N.conflicted_record);
+  // Local negative feedback lowers the score but is NOT a hard contradiction —
+  // it must not, on its own, cap a barcode/name match to a conflict.
+  if (ev.locallyRejected) {
+    score += (N.locally_rejected ?? 0);
+    reasons.push({ code: 'learned_reject', label: 'You rejected this here before', weight: N.locally_rejected ?? 0 });
+  }
   sub(ev.incompatibleEmbeddingVersion, 'embed_version', 'Visual model version differs', N.incompatible_embedding_version);
   sub(ev.lowQualityImage, 'low_quality', 'The image quality is low', N.low_quality_image);
   sub(ev.veryOldReference, 'old_reference', 'The reference image is old', N.very_old_reference);

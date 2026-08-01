@@ -5,6 +5,8 @@ import { pool } from '../db/pool.js';
 export const app = createApp();
 
 const TABLES = [
+  // Store memory / self-learning (Phase 7).
+  'recognition_feedback',
   // Inventory intelligence (Phase 6).
   'alert_actions', 'alert_deliveries', 'alert_preferences', 'inventory_alerts',
   'forecast_evaluations', 'purchase_drafts',

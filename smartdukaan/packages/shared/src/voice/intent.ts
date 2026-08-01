@@ -74,9 +74,9 @@ const RULES: Rule[] = [
 
   // Reports / read-only (before record-changing so "today's sales" doesn't hit sale).
   { intent: 'ask_today_sales', domain: 'report', permission: PERMISSIONS.SALE_VIEW, priority: 82, keywords: ['today sale', 'todays sale', 'aaj ki sale', 'aaj kitni sale', 'kitni sale hui', 'آج کتنی سیل', 'aaj sale'] },
-  { intent: 'ask_today_expenses', domain: 'report', permission: PERMISSIONS.EXPENSE_MANAGE, priority: 82, keywords: ['today expense', 'todays expense', 'aaj ka kharcha', 'kitna kharcha', 'آج کا خرچہ'] },
+  { intent: 'ask_today_expenses', domain: 'report', permission: PERMISSIONS.EXPENSE_MANAGE, priority: 82, keywords: ['today expense', 'todays expense', 'today expenses', 'todays expenses', 'expenses today', 'aaj ka kharcha', 'kitna kharcha', 'آج کا خرچہ'] },
   { intent: 'ask_outstanding', domain: 'report', permission: PERMISSIONS.KHATA_VIEW, priority: 82, keywords: ['outstanding', 'total udhaar', 'kitna udhaar', 'who owes', 'sab ka khata', 'کل ادھار', 'baqi'] },
-  { intent: 'ask_low_stock', domain: 'inventory', permission: PERMISSIONS.INVENTORY_VIEW, priority: 82, keywords: ['low stock', 'kam stock', 'kya khatam', 'finished', 'out of stock', 'کم اسٹاک', 'khatam ho'] },
+  { intent: 'ask_low_stock', domain: 'inventory', permission: PERMISSIONS.INVENTORY_VIEW, priority: 82, keywords: ['low stock', 'low in stock', 'kam stock', 'kya khatam', 'finished', 'out of stock', 'کم اسٹاک', 'khatam ho'] },
   { intent: 'ask_recent_added', domain: 'product', permission: PERMISSIONS.PRODUCT_VIEW, priority: 82, keywords: ['recently added', 'added recently', 'recently', 'kya add kiya', 'recent products', 'abhi kya', 'حال ہی میں شامل', 'kya daala', 'what i added'] },
   { intent: 'ask_recent_sold', domain: 'report', permission: PERMISSIONS.SALE_VIEW, priority: 80, keywords: ['recently sold', 'kya bika', 'kya becha', 'حال ہی میں فروخت'] },
   // Phase 6 — inventory-intelligence read-only queries.

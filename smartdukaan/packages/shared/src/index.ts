@@ -12,3 +12,4 @@ export * from './fusion.js';
 export * from './cloudtypes.js';
 export * from './voice/index.js';
 export * from './intelligence/index.js';
+export * from './memory/learning.js';
