@@ -7,3 +7,6 @@ export * from './packsize.js';
 export * from './barcode.js';
 export * from './recognition.js';
 export * from './scoring.js';
+export * from './imagefp.js';
+export * from './fusion.js';
+export * from './cloudtypes.js';

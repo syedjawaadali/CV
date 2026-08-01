@@ -55,7 +55,13 @@ const recognizeSchema = z.object({
   ocrProviderVersion: z.string().trim().max(40).nullable().optional(),
   processingMs: z.number().int().min(0).max(600000).nullable().optional(),
   imageQuality: z.enum(['good', 'acceptable', 'retake', 'cannot_process']).nullable().optional(),
-}).refine((v) => !!v.barcode || !!v.ocrText, { message: 'Provide a barcode or package text', path: ['ocrText'] });
+  // Phase 4 — client-computed image fingerprints (no image bytes sent here).
+  imageContentHash: z.string().trim().max(128).nullable().optional(),
+  imagePerceptualHash: z.string().trim().max(128).nullable().optional(),
+  phashAlgorithm: z.enum(['ahash', 'dhash']).nullable().optional(),
+  phashVersion: z.string().trim().max(8).nullable().optional(),
+}).refine((v) => !!v.barcode || !!v.ocrText || !!v.imageContentHash || !!v.imagePerceptualHash,
+  { message: 'Provide a barcode, package text or an image', path: ['ocrText'] });
 
 knowledgeRouter.post(
   '/recognize',

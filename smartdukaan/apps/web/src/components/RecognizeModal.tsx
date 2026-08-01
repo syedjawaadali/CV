@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ScanLine, Camera, Search, Sparkles, AlertTriangle, Check } from 'lucide-react';
+import { ScanLine, Camera, Search, Sparkles, AlertTriangle, Check, Cloud } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 import { money } from '../lib/format';
 import { useI18n } from '../i18n/I18nContext';
 import { scanBarcode, takePhoto, isNative } from '../lib/native';
 import { recognizeOnDevice } from '../lib/ocr';
+import { fingerprintImage, minimizeForUpload, type ImageFingerprint } from '../lib/imagefp';
 import { Badge, Button, Field, Modal, useToast } from './ui';
 
 interface Candidate {
@@ -38,6 +39,11 @@ export function RecognizeModal({ onClose, onCreateNew }: {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<RecognizeResult | null>(null);
+  // Phase 4 — image fingerprint (local matching) + minimized image (cloud only on consent).
+  const [fp, setFp] = useState<ImageFingerprint | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudCandidates, setCloudCandidates] = useState<Array<{ name: string; note: string }> | null>(null);
 
   async function doScan() {
     const code = await scanBarcode();
@@ -48,22 +54,68 @@ export function RecognizeModal({ onClose, onCreateNew }: {
   async function doPhoto() {
     const dataUrl = await takePhoto();
     if (!dataUrl) return;
+    setPhoto(dataUrl);
+    // Compute local fingerprints on-device (only tiny hashes are sent to match).
+    try { setFp(await fingerprintImage(dataUrl)); } catch { /* fingerprint is best-effort */ }
     const ocr = await recognizeOnDevice(dataUrl);
     if (ocr.status === 'success' && ocr.fullText) setText((prev) => (prev ? prev + '\n' : '') + ocr.fullText);
-    else toast.push(L('Camera reading not available — type the package text', 'کیمرہ پڑھائی دستیاب نہیں — پیکٹ کا متن لکھیں'), 'error');
+    else toast.push(L('Photo captured — add the package text if you can', 'تصویر لے لی — ہو سکے تو پیکٹ کا متن لکھیں'), 'success');
   }
 
   async function recognize() {
     if (!barcode && !text.trim()) { toast.push(L('Scan a barcode or type package text', 'بارکوڈ اسکین کریں یا متن لکھیں'), 'error'); return; }
     setBusy(true);
+    setCloudCandidates(null);
     try {
       const res = await api.post<RecognizeResult>('/kb/recognize', {
         barcode: barcode ?? undefined, ocrText: text.trim() || undefined,
+        imageContentHash: fp?.contentHash ?? undefined,
+        imagePerceptualHash: fp?.perceptualHash ?? undefined,
+        phashAlgorithm: fp ? fp.phashAlgorithm : undefined,
+        phashVersion: fp ? fp.phashVersion : undefined,
       });
       setResult(res);
     } catch (err) {
       toast.push(err instanceof ApiError ? err.message : t('something_wrong'), 'error');
     } finally { setBusy(false); }
+  }
+
+  /** Optional online check — only runs on explicit user consent, sends a
+   *  minimized image + package text (never business records) to the backend. */
+  async function checkOnline() {
+    if (!result) return;
+    setCloudBusy(true);
+    try {
+      let img: { base64: string; mime: string; width: number; height: number } | null = null;
+      if (photo) img = await minimizeForUpload(photo);
+      const bounded = result.candidates.slice(0, 8).map((c) => ({
+        candidateId: c.retailerProductId ?? c.globalProductId ?? c.displayName,
+        productName: c.displayName, brand: c.brand, packSummary: c.packSize,
+      }));
+      const res = await api.post<{ status: string; reason: string; result: {
+        possibleCatalogCandidates: Array<{ candidateId: string; matches: boolean }>;
+        identifiedProductName: { value: string | null };
+      } | null }>('/cloud/recognize', {
+        ocrText: text.trim() || undefined,
+        imageBase64: img?.base64, imageMime: img?.mime, imageWidth: img?.width, imageHeight: img?.height,
+        boundedCandidates: bounded, consentThisTime: true, networkWifi: true,
+      });
+      if (res.status !== 'completed' && res.status !== 'cached') {
+        const msg = res.status === 'budget_blocked'
+          ? L('Online product checking is temporarily unavailable. Scan again, search, or create the product.',
+              'آن لائن جانچ فی الحال دستیاب نہیں۔ دوبارہ اسکین کریں، تلاش کریں یا مصنوعات بنائیں۔')
+          : res.status === 'not_eligible'
+            ? L('Online checking is turned off. You can enable it in settings.', 'آن لائن جانچ بند ہے۔ ترتیبات میں چالو کریں۔')
+            : L('Online checking could not complete. Please confirm manually.', 'آن لائن جانچ مکمل نہ ہو سکی۔ براہ کرم دستی تصدیق کریں۔');
+        toast.push(msg, 'error');
+        setCloudCandidates([]);
+        return;
+      }
+      const name = res.result?.identifiedProductName.value ?? null;
+      setCloudCandidates(name ? [{ name, note: L('Checked online — please confirm', 'آن لائن جانچا — تصدیق کریں') }] : []);
+    } catch (err) {
+      toast.push(err instanceof ApiError ? err.message : t('something_wrong'), 'error');
+    } finally { setCloudBusy(false); }
   }
 
   async function useProduct(c: Candidate) {
@@ -163,8 +215,39 @@ export function RecognizeModal({ onClose, onCreateNew }: {
             </div>
           )}
 
+          {/* Online check — only offered when local evidence is weak, and only
+              runs on an explicit tap (consent). Sends a cropped image + text,
+              never business records. */}
+          {(result.confidence === 'low' || result.confidence === 'medium') && cloudCandidates === null && (
+            <button
+              type="button" onClick={() => void checkOnline()} disabled={cloudBusy}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-700 disabled:opacity-60"
+            >
+              <Cloud className="h-4 w-4" />
+              {cloudBusy ? L('Checking online…', 'آن لائن جانچ…') : L('Check online', 'آن لائن جانچیں')}
+            </button>
+          )}
+          {cloudCandidates && cloudCandidates.length > 0 && (
+            <div className="rounded-lg border border-brand-200 bg-brand-50 p-3">
+              {cloudCandidates.map((c, i) => (
+                <div key={i} className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-900">{c.name}</p>
+                    <p className="text-xs text-brand-700">{c.note}</p>
+                  </div>
+                  <Button className="shrink-0 px-3 py-1.5 text-sm" onClick={() => onCreateNew({ name: c.name, barcode })}>
+                    <Check className="h-4 w-4" /> {L('Use', 'استعمال')}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          {cloudCandidates && cloudCandidates.length === 0 && (
+            <p className="text-xs text-slate-500">{L('No online match. Create the product or search manually.', 'آن لائن کوئی مماثلت نہیں۔ مصنوعات بنائیں یا تلاش کریں۔')}</p>
+          )}
+
           <div className="flex justify-between gap-2 pt-1">
-            <Button variant="secondary" onClick={() => setResult(null)}>{L('Scan again', 'دوبارہ')}</Button>
+            <Button variant="secondary" onClick={() => { setResult(null); setCloudCandidates(null); }}>{L('Scan again', 'دوبارہ')}</Button>
             <Button onClick={createNew}>{L('Create new product', 'نئی مصنوعات بنائیں')}</Button>
           </div>
         </div>

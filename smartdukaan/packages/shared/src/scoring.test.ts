@@ -25,6 +25,31 @@ describe('scoreCandidate + confidenceCategory', () => {
     expect(decideAction('conflict', true)).toBe('resolve_conflict');
   });
 
+  it('Phase 4: content-hash-identical image alone cannot reach exact', () => {
+    const ev: CandidateEvidence = { contentHashIdentical: true };
+    const s = scoreCandidate(ev);
+    expect(s.score).toBe(45);
+    expect(cat(ev)).not.toBe('exact');
+  });
+
+  it('Phase 4: image match + OCR name + pack size corroborate to a usable score', () => {
+    const ev: CandidateEvidence = { perceptualNear: true, exactNormalizedName: true, packSizeMatch: true };
+    // 30 + 50 + 25 = 105, no contradictions
+    expect(scoreCandidate(ev).score).toBe(105);
+    expect(cat(ev)).toBe('exact');
+  });
+
+  it('Phase 4: only the strongest visual bucket is credited', () => {
+    const ev: CandidateEvidence = { contentHashIdentical: true, perceptualNear: true, perceptualSimilar: true };
+    expect(scoreCandidate(ev).score).toBe(45); // not 45+30+15
+  });
+
+  it('Phase 4: incompatible embedding version is a contradiction', () => {
+    const ev: CandidateEvidence = { perceptualSimilar: true, incompatibleEmbeddingVersion: true };
+    const s = scoreCandidate(ev);
+    expect(s.contradictions.length).toBeGreaterThan(0);
+  });
+
   it('conflicted barcode (multiple variants) => conflict', () => {
     expect(cat({ barcode: 'conflict' })).toBe('conflict');
     expect(cat({ barcode: 'multiple' })).toBe('conflict');

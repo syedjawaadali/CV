@@ -5,6 +5,11 @@ import { pool } from '../db/pool.js';
 export const app = createApp();
 
 const TABLES = [
+  // Visual + Cloud AI (Phase 4) — truncated first; most cascade from products/tenants.
+  // NOTE: ai_cost_config / cloud_prompt_versions are SEED data (0009) and are NOT reset.
+  'ai_usage_events', 'ai_budgets', 'ai_result_cache', 'cloud_recognition_requests',
+  'cloud_consent_preferences', 'image_safety_results', 'image_embeddings', 'image_fingerprints',
+  'ai_provider_health',
   // Knowledge Base (Phase 2) — truncated first; most cascade from products anyway.
   'catalog_review_candidates', 'recognition_confirmations', 'recognition_candidates',
   'recognition_observations', 'price_observations', 'product_images', 'product_aliases',
@@ -53,4 +58,5 @@ export const api = (token: string) => ({
   get: (p: string) => request(app).get(p).set('Authorization', `Bearer ${token}`),
   post: (p: string) => request(app).post(p).set('Authorization', `Bearer ${token}`),
   patch: (p: string) => request(app).patch(p).set('Authorization', `Bearer ${token}`),
+  put: (p: string) => request(app).put(p).set('Authorization', `Bearer ${token}`),
 });

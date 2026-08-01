@@ -23,6 +23,20 @@ export const features = {
   packagingChangeDetection: flag('FEATURE_PACKAGING_CHANGE_DETECTION', true),
   printedPriceDetection: flag('FEATURE_PRINTED_PRICE_DETECTION', true),
   offlineProductRecognition: flag('FEATURE_OFFLINE_PRODUCT_RECOGNITION', true),
+  // Phase 4 — local visual matching is ON (cheap, private, on-device-friendly);
+  // everything that spends money on cloud AI is OFF by default and must be
+  // explicitly enabled per environment. Disabling cloud returns the Phase 3 flow.
+  localImageFingerprint: flag('FEATURE_LOCAL_IMAGE_FINGERPRINT', true),
+  localVisualMatching: flag('FEATURE_LOCAL_VISUAL_MATCHING', true),
+  localImageEmbedding: flag('FEATURE_LOCAL_IMAGE_EMBEDDING', false),
+  sharedVisualMatching: flag('FEATURE_SHARED_VISUAL_MATCHING', true),
+  cloudProductRecognition: flag('FEATURE_CLOUD_PRODUCT_RECOGNITION', false),
+  cloudRecognitionConsent: flag('FEATURE_CLOUD_RECOGNITION_CONSENT', true),
+  cloudRecognitionCache: flag('FEATURE_CLOUD_RECOGNITION_CACHE', true),
+  cloudRecognitionBudget: flag('FEATURE_CLOUD_RECOGNITION_BUDGET', true),
+  cloudRecognitionSecondaryModel: flag('FEATURE_CLOUD_RECOGNITION_SECONDARY_MODEL', false),
+  packagingVisualChangeDetection: flag('FEATURE_PACKAGING_VISUAL_CHANGE_DETECTION', true),
+  aiUsageDashboard: flag('FEATURE_AI_USAGE_DASHBOARD', true),
 } as const;
 
 export type FeatureName = keyof typeof features;

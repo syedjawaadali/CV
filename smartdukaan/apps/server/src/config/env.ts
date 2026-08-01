@@ -23,6 +23,14 @@ const schema = z.object({
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL: z.string().default('30d'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  // Phase 4 — Cloud AI (all OPTIONAL and backend-only; never sent to clients or
+  // logged with their values). Provider defaults to the deterministic mock so
+  // no real spend can occur unless a real key + provider are configured.
+  AI_PROVIDER: z.enum(['mock', 'gemini']).default('mock'),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
+  AI_DAILY_REQUEST_LIMIT: z.coerce.number().int().nonnegative().default(200),
+  AI_DAILY_COST_LIMIT_MINOR: z.coerce.number().int().nonnegative().default(50_000), // PKR 500.00/day default ceiling
 });
 
 const parsed = schema.safeParse(process.env);
@@ -57,6 +65,13 @@ export const env = {
   accessTokenTtl: raw.ACCESS_TOKEN_TTL,
   refreshTokenTtl: raw.REFRESH_TOKEN_TTL,
   corsOrigins: raw.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean),
+  ai: {
+    provider: raw.AI_PROVIDER,
+    geminiApiKey: raw.GEMINI_API_KEY ?? '',
+    geminiModel: raw.GEMINI_MODEL,
+    dailyRequestLimit: raw.AI_DAILY_REQUEST_LIMIT,
+    dailyCostLimitMinor: raw.AI_DAILY_COST_LIMIT_MINOR,
+  },
 } as const;
 
 /** A redacted snapshot safe to log or expose via a health check. */
@@ -67,5 +82,7 @@ export function safeConfigSummary() {
     databaseConfigured: env.databaseUrl.length > 0,
     jwtConfigured: env.jwtSecret.length > 0,
     corsOrigins: env.corsOrigins,
+    aiProvider: env.ai.provider,
+    aiCredentialConfigured: env.ai.geminiApiKey.length > 0, // boolean only — never the key
   };
 }

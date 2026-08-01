@@ -2,8 +2,11 @@ import {
   analyzeBarcode, normalizeText, normalizeBarcode, extractAttributes,
   scoreCandidate, confidenceCategory, decideAction, RECOGNITION_CONFIG,
   type CandidateEvidence, type BarcodeEvidence, type ExtractedAttributes,
+  type PerceptualAlgorithm,
 } from '@smartdukaan/shared';
 import { query, withTransaction } from '../../db/pool.js';
+import { features } from '../../config/features.js';
+import { findVisualCandidates } from '../cloud/fingerprint.service.js';
 
 /**
  * Local-first product recognition (Phase 3). Combines barcode evidence with
@@ -24,6 +27,11 @@ export interface RecognizeInput {
   ocrProviderVersion?: string | null;
   processingMs?: number | null;
   imageQuality?: string | null;
+  // Phase 4 — client-computed image fingerprints (no image bytes needed here).
+  imageContentHash?: string | null;
+  imagePerceptualHash?: string | null;
+  phashAlgorithm?: PerceptualAlgorithm | null;
+  phashVersion?: string | null;
 }
 
 interface CandidateRow {
@@ -51,8 +59,10 @@ export async function recognize(ctx: Ctx, input: RecognizeInput) {
   const candidateNames = new Set(attrs.brandNameCandidates);
   if (attrs.normalizedText) candidateNames.add(attrs.normalizedText);
 
-  const observationType = input.barcode && input.ocrText ? 'combined'
-    : input.barcode ? 'barcode' : input.ocrText ? 'ocr' : 'manual_search';
+  const hasImage = !!(input.imageContentHash || input.imagePerceptualHash);
+  const signalCount = [!!input.barcode, !!input.ocrText, hasImage].filter(Boolean).length;
+  const observationType = signalCount > 1 ? 'combined'
+    : input.barcode ? 'barcode' : input.ocrText ? 'ocr' : hasImage ? 'image' : 'manual_search';
 
   const candidates: CandidateRow[] = [];
 
@@ -130,6 +140,40 @@ export async function recognize(ctx: Ctx, input: RecognizeInput) {
     for (const r of sn.rows) {
       if (candidates.some((c) => c.productVariantId === r.variant_id)) continue;
       candidates.push(makeSharedCandidate({ ...r, verification: 'unverified' }, undefined, attrs));
+    }
+  }
+
+  // --- Local visual matching (Phase 4) ----------------------------------------
+  // Image fingerprints add a corroborating signal. They can BOOST an existing
+  // candidate or introduce a retailer candidate that barcode/OCR missed, but the
+  // weights (scoring.ts) keep an image-only match below `exact`.
+  const hasFingerprint = !!(input.imageContentHash || input.imagePerceptualHash);
+  if (features.localVisualMatching && hasFingerprint) {
+    const visual = await findVisualCandidates(
+      { shopId: ctx.shopId },
+      {
+        contentHash: input.imageContentHash ?? null,
+        perceptualHash: input.imagePerceptualHash ?? null,
+        phashAlgorithm: input.phashAlgorithm ?? null,
+        phashVersion: input.phashVersion ?? null,
+      },
+    );
+    for (const vm of visual) {
+      if (!vm.retailerProductId) continue;
+      const existing = candidates.find((c) => c.retailerProductId === vm.retailerProductId);
+      if (existing) {
+        applyVisualEvidence(existing.ev, vm.similarityCategory, vm.contentIdentical);
+        continue;
+      }
+      const p = retailer.rows.find((row) => row.id === vm.retailerProductId);
+      if (!p) continue;
+      const ev: CandidateEvidence = { recentlyUsed: recentIds.has(p.id), existingCatalogLink: !!p.product_variant_id };
+      applyVisualEvidence(ev, vm.similarityCategory, vm.contentIdentical);
+      candidates.push({
+        kind: 'retailer', retailerProductId: p.id, globalProductId: null,
+        productVariantId: p.product_variant_id, displayName: p.name, brand: null,
+        packSummary: p.unit, baseQuantity: null, baseUnit: null, verificationStatus: null, ev,
+      });
     }
   }
 
@@ -230,6 +274,15 @@ function makeSharedCandidate(
       brandMatch, packSizeMatch, packSizeContradiction,
     },
   };
+}
+
+/** Set the strongest applicable visual-evidence flag on a candidate's evidence. */
+function applyVisualEvidence(
+  ev: CandidateEvidence, category: string, contentIdentical: boolean,
+): void {
+  if (contentIdentical || category === 'identical_file') ev.contentHashIdentical = true;
+  else if (category === 'near_identical_image') ev.perceptualNear = true;
+  else if (category === 'visually_similar') ev.perceptualSimilar = true;
 }
 
 function candidateNameHit(attrs: ExtractedAttributes, name: string): boolean {

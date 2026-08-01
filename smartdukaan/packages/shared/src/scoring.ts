@@ -39,6 +39,12 @@ export const RECOGNITION_CONFIG: RecognitionConfig = {
     packaging_text_similarity: 20, // multiplied by similarity 0..1
     current_packaging_match: 10,
     printed_price_consistent: 5,
+    // Phase 4 — visual signals. Deliberately weaker than barcode/name so an
+    // image match alone can never reach `exact`; it needs corroboration.
+    content_hash_identical: 45,
+    perceptual_near: 30,
+    perceptual_similar: 15,
+    embedding_similar: 20, // multiplied by similarity 0..1
   },
   negatives: {
     conflicting_barcode: -1000,
@@ -51,6 +57,10 @@ export const RECOGNITION_CONFIG: RecognitionConfig = {
     retired_product: -1000,
     inactive_barcode: -30,
     conflicted_record: -1000,
+    // Phase 4 — visual negatives.
+    incompatible_embedding_version: -20,
+    low_quality_image: -15,
+    very_old_reference: -10,
   },
   thresholds: { exact: 95, high: 70, medium: 40 },
   candidateLimit: 10,
@@ -73,6 +83,11 @@ export interface CandidateEvidence {
   packagingTextSimilarity?: number; // 0..1
   currentPackagingMatch?: boolean;
   printedPriceConsistent?: boolean;
+  // Phase 4 — visual evidence (one input among many; never decides identity).
+  contentHashIdentical?: boolean;
+  perceptualNear?: boolean;
+  perceptualSimilar?: boolean;
+  embeddingSimilar?: number; // 0..1
   // negative evidence
   packSizeContradiction?: boolean;
   brandContradiction?: boolean;
@@ -83,6 +98,10 @@ export interface CandidateEvidence {
   retired?: boolean;
   inactiveBarcode?: boolean;
   conflictedRecord?: boolean;
+  // Phase 4 — visual negatives.
+  incompatibleEmbeddingVersion?: boolean;
+  lowQualityImage?: boolean;
+  veryOldReference?: boolean;
 }
 
 export interface MatchReason { code: string; label: string; weight: number }
@@ -133,6 +152,19 @@ export function scoreCandidate(ev: CandidateEvidence, cfg: RecognitionConfig = R
     if (w > 0) { score += w; reasons.push({ code: 'packaging_text', label: 'Packaging text is similar', weight: w }); }
   }
 
+  // Phase 4 — visual signals. Only the strongest applicable bucket is credited.
+  if (ev.contentHashIdentical) {
+    add(true, 'image_identical', 'Same package image', cfg.weights.content_hash_identical);
+  } else if (ev.perceptualNear) {
+    add(true, 'image_near', 'Looks like the same package', cfg.weights.perceptual_near);
+  } else if (ev.perceptualSimilar) {
+    add(true, 'image_similar', 'Looks similar to a saved package', cfg.weights.perceptual_similar);
+  }
+  if (typeof ev.embeddingSimilar === 'number' && ev.embeddingSimilar > 0) {
+    const w = Math.round((cfg.weights.embedding_similar ?? 0) * Math.min(1, ev.embeddingSimilar));
+    if (w > 0) { score += w; reasons.push({ code: 'image_embedding', label: 'Visually similar packaging', weight: w }); }
+  }
+
   sub(ev.barcode === 'conflict', 'barcode_conflict', 'This barcode is used by more than one product', N.conflicting_barcode);
   sub(ev.packSizeContradiction, 'pack_size_conflict', 'The pack size appears different', N.pack_size_contradiction);
   sub(ev.brandContradiction, 'brand_conflict', 'The brand appears different', N.brand_contradiction);
@@ -143,6 +175,9 @@ export function scoreCandidate(ev: CandidateEvidence, cfg: RecognitionConfig = R
   sub(ev.retired, 'retired', 'This product is retired', N.retired_product);
   sub(ev.inactiveBarcode, 'inactive_barcode', 'This barcode is inactive', N.inactive_barcode);
   sub(ev.conflictedRecord, 'conflicted_record', 'This catalog record is conflicted', N.conflicted_record);
+  sub(ev.incompatibleEmbeddingVersion, 'embed_version', 'Visual model version differs', N.incompatible_embedding_version);
+  sub(ev.lowQualityImage, 'low_quality', 'The image quality is low', N.low_quality_image);
+  sub(ev.veryOldReference, 'old_reference', 'The reference image is old', N.very_old_reference);
 
   const hardConflict = !!(ev.barcode === 'conflict' || ev.retired || ev.conflictedRecord);
   return { score, reasons, contradictions, hardConflict };
