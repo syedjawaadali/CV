@@ -21,6 +21,7 @@ import { orderRouter } from './orders/orders.routes.js';
 import { knowledgeRouter } from './knowledge/knowledge.routes.js';
 import { cloudRouter } from './cloud/cloud.routes.js';
 import { voiceRouter } from './voice/voice.routes.js';
+import { intelligenceRouter } from './intelligence/intelligence.routes.js';
 
 /** Mounts all API routes under /api. Auth is public; everything else requires a session. */
 export const apiRouter = Router();
@@ -36,6 +37,7 @@ apiRouter.use('/orders', orderRouter);
 apiRouter.use('/kb', knowledgeRouter);
 apiRouter.use('/cloud', cloudRouter);
 apiRouter.use('/voice', voiceRouter);
+apiRouter.use('/intelligence', intelligenceRouter);
 apiRouter.use('/shop', shopRouter);
 apiRouter.use('/employees', employeeRouter);
 apiRouter.use('/customers', customerRouter);

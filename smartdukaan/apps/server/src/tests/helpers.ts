@@ -5,6 +5,11 @@ import { pool } from '../db/pool.js';
 export const app = createApp();
 
 const TABLES = [
+  // Inventory intelligence (Phase 6).
+  'alert_actions', 'alert_deliveries', 'alert_preferences', 'inventory_alerts',
+  'forecast_evaluations', 'purchase_drafts',
+  // Voice (Phase 5).
+  'voice_entities', 'voice_actions', 'voice_intents', 'voice_transcripts', 'voice_memory', 'voice_sessions',
   // Visual + Cloud AI (Phase 4) — truncated first; most cascade from products/tenants.
   // NOTE: ai_cost_config / cloud_prompt_versions are SEED data (0009) and are NOT reset.
   'ai_usage_events', 'ai_budgets', 'ai_result_cache', 'cloud_recognition_requests',

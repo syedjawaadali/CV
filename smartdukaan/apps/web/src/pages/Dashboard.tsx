@@ -10,6 +10,7 @@ import { PERMISSIONS } from '@smartdukaan/shared';
 import { api } from '../lib/api';
 import { money } from '../lib/format';
 import { useI18n } from '../i18n/I18nContext';
+import { AlertsPanel } from '../components/AlertsPanel';
 import { useAuth } from '../auth/AuthContext';
 import { speak, stopSpeaking } from '../lib/native';
 import { Badge, ErrorState, Loading } from '../components/ui';
@@ -96,6 +97,8 @@ export function DashboardPage() {
           </Badge>
         </div>
       </div>
+
+      <AlertsPanel />
 
       {s.lowStockCount > 0 && (
         <Link to="/restock" className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 transition-shadow hover:shadow-sm">

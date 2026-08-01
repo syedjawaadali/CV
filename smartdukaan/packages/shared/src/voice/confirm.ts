@@ -51,6 +51,8 @@ export function confirmationLevelFor(intent: string, opts?: { amountMajor?: numb
     'ask_recent_added', 'ask_recent_sold', 'ask_recent_refilled', 'ask_today_sales',
     'ask_today_expenses', 'ask_outstanding', 'ask_inventory_summary', 'ask_customer_balance',
     'read_summary', 'repeat', 'stop_speaking', 'help', 'set_language', 'hide_amounts', 'cancel',
+    // Phase 6 inventory-intelligence queries are read-only.
+    'ask_reorder', 'ask_expiry', 'ask_finishing_soon', 'ask_needs_attention',
   ]);
   const STRONG = new Set([
     'adjust_stock', 'reverse_sale', 'reverse_payment', 'deactivate_product', 'update_price',

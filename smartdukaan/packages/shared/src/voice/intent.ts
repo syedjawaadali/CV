@@ -79,6 +79,11 @@ const RULES: Rule[] = [
   { intent: 'ask_low_stock', domain: 'inventory', permission: PERMISSIONS.INVENTORY_VIEW, priority: 82, keywords: ['low stock', 'kam stock', 'kya khatam', 'finished', 'out of stock', 'کم اسٹاک', 'khatam ho'] },
   { intent: 'ask_recent_added', domain: 'product', permission: PERMISSIONS.PRODUCT_VIEW, priority: 82, keywords: ['recently added', 'added recently', 'recently', 'kya add kiya', 'recent products', 'abhi kya', 'حال ہی میں شامل', 'kya daala', 'what i added'] },
   { intent: 'ask_recent_sold', domain: 'report', permission: PERMISSIONS.SALE_VIEW, priority: 80, keywords: ['recently sold', 'kya bika', 'kya becha', 'حال ہی میں فروخت'] },
+  // Phase 6 — inventory-intelligence read-only queries.
+  { intent: 'ask_reorder', domain: 'inventory', permission: PERMISSIONS.INVENTORY_VIEW, priority: 84, keywords: ['what should i order', 'kya order', 'reorder', 'kya mangwana', 'order karna', 'kya khareed', 'کیا آرڈر'] },
+  { intent: 'ask_expiry', domain: 'inventory', permission: PERMISSIONS.INVENTORY_VIEW, priority: 84, keywords: ['expiry', 'expire', 'expiring', 'khatam ho rahi', 'میعاد', 'expiry kab'] },
+  { intent: 'ask_finishing_soon', domain: 'inventory', permission: PERMISSIONS.INVENTORY_VIEW, priority: 84, keywords: ['finish soon', 'khatam ho jaye', 'run out', 'jaldi khatam', 'کب ختم', 'finish hone'] },
+  { intent: 'ask_needs_attention', domain: 'report', permission: PERMISSIONS.REPORT_VIEW, priority: 83, keywords: ['what needs attention', 'kya dekhna', 'kya masla', 'attention', 'کیا توجہ', 'kya zaroori'] },
   { intent: 'read_summary', domain: 'report', permission: PERMISSIONS.REPORT_VIEW, priority: 80, keywords: ['summary', 'business summary', 'aaj ka hisab', 'today summary', 'خلاصہ', 'hisaab'] },
   { intent: 'ask_customer_balance', domain: 'khata', permission: PERMISSIONS.KHATA_VIEW, priority: 78, keywords: ['balance', 'kitna dena', 'kitna baqi', 'owe', 'ke khate mein kitna', 'kitna owe'] },
 

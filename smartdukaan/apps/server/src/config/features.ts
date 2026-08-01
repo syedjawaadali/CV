@@ -54,6 +54,22 @@ export const features = {
   voiceMemory: flag('FEATURE_VOICE_MEMORY', true),
   offlineVoice: flag('FEATURE_OFFLINE_VOICE', true),
   voiceCloudFallback: flag('FEATURE_VOICE_CLOUD_FALLBACK', false),
+  // Phase 6 — inventory intelligence. Deterministic rules + forecasting on;
+  // proactive spoken alerts (while app closed) and sponsored offers off by default.
+  inventoryIntelligence: flag('FEATURE_INVENTORY_INTELLIGENCE', true),
+  deterministicLowStockAlerts: flag('FEATURE_DETERMINISTIC_LOW_STOCK_ALERTS', true),
+  stockoutProjection: flag('FEATURE_STOCKOUT_PROJECTION', true),
+  demandBaseline: flag('FEATURE_DEMAND_BASELINE', true),
+  reorderSuggestions: flag('FEATURE_REORDER_SUGGESTIONS', true),
+  expiryAlerts: flag('FEATURE_EXPIRY_ALERTS', true),
+  anomalyAlerts: flag('FEATURE_ANOMALY_ALERTS', true),
+  slowMovingIndicators: flag('FEATURE_SLOW_MOVING_INDICATORS', true),
+  dailyOpeningSummary: flag('FEATURE_DAILY_OPENING_SUMMARY', true),
+  dailyClosingSummary: flag('FEATURE_DAILY_CLOSING_SUMMARY', true),
+  proactiveSpokenAlerts: flag('FEATURE_PROACTIVE_SPOKEN_ALERTS', false),
+  alertGrouping: flag('FEATURE_ALERT_GROUPING', true),
+  offlineInventoryIntelligence: flag('FEATURE_OFFLINE_INVENTORY_INTELLIGENCE', true),
+  sponsoredSupplierOffers: flag('FEATURE_SPONSORED_SUPPLIER_OFFERS', false),
 } as const;
 
 export type FeatureName = keyof typeof features;

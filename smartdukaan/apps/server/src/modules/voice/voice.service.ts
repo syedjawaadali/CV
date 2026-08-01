@@ -28,6 +28,9 @@ import { createExpense } from '../expenses/expenses.service.js';
 import { updateProduct } from '../products/products.service.js';
 import { getSummary } from '../dashboard/dashboard.service.js';
 import { resolveProduct, resolveCustomer } from './resolve.service.js';
+import { businessSummary } from '../intelligence/summary.service.js';
+import { reorderSuggestions } from '../intelligence/reorder.service.js';
+import { evaluateShop } from '../intelligence/alerts.service.js';
 
 export interface VoiceCtx { tenantId: string; shopId: string; userId: string; role: Role }
 
@@ -184,12 +187,31 @@ async function answerReadOnly(
       const r = buildSpokenResponse({ kind: 'recent_added', items: rows.map((x) => x.name), language: lang });
       return done(r.speech, JSON.stringify({ items: rows.map((x) => x.name) }));
     }
-    case 'read_summary': {
-      const s = await getSummary(ctx) as { todaySalesMinor?: number; expensesTodayMinor?: number };
-      const speech = privacy
-        ? 'Your business summary is ready. Open the dashboard to view details.'
-        : `Today's sales are ${minorToMajor(s.todaySalesMinor) ?? 0} rupees and expenses are ${minorToMajor(s.expensesTodayMinor) ?? 0} rupees.`;
-      return done(speech, JSON.stringify(s));
+    case 'read_summary':
+    case 'ask_needs_attention': {
+      const kind = result.intent === 'read_summary' ? 'closing' : 'needs_attention';
+      const sum = await businessSummary(ctx, kind, new Date(), { privacyMode: privacy, language: lang });
+      return done(sum.speech || (lang === 'ur' ? 'کوئی خاص بات نہیں۔' : 'Nothing urgent right now.'), JSON.stringify(sum.counts));
+    }
+    case 'ask_reorder': {
+      const sugg = await reorderSuggestions(ctx, new Date(), 20);
+      if (sugg.length === 0) return done(lang === 'ur' ? 'ابھی کچھ منگوانے کی ضرورت نہیں۔' : 'Nothing needs restocking right now.', '[]');
+      const top = sugg[0]!;
+      const more = sugg.length > 1 ? ` ${sugg.length - 1} more may need restocking.` : '';
+      const speech = `${sugg.length} product(s) may need restocking. ${top.productName} is most urgent: ${top.available} available, ${top.suggestion.reason} Suggested about ${top.suggestion.suggestedUnits} ${top.productName ? '' : ''}units. Review the purchase list to confirm.${more}`;
+      return done(speech, JSON.stringify({ count: sugg.length, top: top.productId }));
+    }
+    case 'ask_expiry':
+    case 'ask_finishing_soon': {
+      const alerts = await evaluateShop(ctx, new Date());
+      const wanted = result.intent === 'ask_expiry'
+        ? alerts.filter((a) => a.alertType === 'expiring_soon' || a.alertType === 'expired')
+        : alerts.filter((a) => a.alertType === 'out_of_stock' || a.alertType === 'low_stock');
+      if (wanted.length === 0) {
+        return done(lang === 'ur' ? 'کوئی خاص بات نہیں۔' : (result.intent === 'ask_expiry' ? 'No expiry issues recorded.' : 'Nothing is finishing soon.'), '[]');
+      }
+      const speech = `${wanted.length} product(s) need attention. ${wanted[0]!.explanation}`;
+      return done(speech, JSON.stringify({ count: wanted.length }));
     }
     default:
       return done(buildSpokenResponse({ kind: 'not_found', language: lang }).speech, 'unsupported_read');
