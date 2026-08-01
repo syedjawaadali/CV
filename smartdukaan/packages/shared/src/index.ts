@@ -10,3 +10,4 @@ export * from './scoring.js';
 export * from './imagefp.js';
 export * from './fusion.js';
 export * from './cloudtypes.js';
+export * from './voice/index.js';

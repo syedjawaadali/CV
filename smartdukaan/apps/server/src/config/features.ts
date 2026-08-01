@@ -37,6 +37,23 @@ export const features = {
   cloudRecognitionSecondaryModel: flag('FEATURE_CLOUD_RECOGNITION_SECONDARY_MODEL', false),
   packagingVisualChangeDetection: flag('FEATURE_PACKAGING_VISUAL_CHANGE_DETECTION', true),
   aiUsageDashboard: flag('FEATURE_AI_USAGE_DASHBOARD', true),
+  // Phase 5 — voice assistant. The assistant + deterministic intent engine are
+  // ON; cloud speech / AI-assisted intent (paid) are OFF by default. Disabling
+  // voiceAssistant restores the pure-UI experience.
+  voiceAssistant: flag('FEATURE_VOICE_ASSISTANT', true),
+  localSpeechToText: flag('FEATURE_LOCAL_SPEECH_TO_TEXT', true),
+  cloudSpeechToText: flag('FEATURE_CLOUD_SPEECH_TO_TEXT', false),
+  voiceIntentEngine: flag('FEATURE_VOICE_INTENT_ENGINE', true),
+  voiceProductCommands: flag('FEATURE_VOICE_PRODUCT_COMMANDS', true),
+  voiceInventoryCommands: flag('FEATURE_VOICE_INVENTORY_COMMANDS', true),
+  voiceSalesCommands: flag('FEATURE_VOICE_SALES_COMMANDS', true),
+  voiceKhataCommands: flag('FEATURE_VOICE_KHATA_COMMANDS', true),
+  voiceExpenseCommands: flag('FEATURE_VOICE_EXPENSE_COMMANDS', true),
+  voiceReportQueries: flag('FEATURE_VOICE_REPORT_QUERIES', true),
+  textToSpeech: flag('FEATURE_TEXT_TO_SPEECH', true),
+  voiceMemory: flag('FEATURE_VOICE_MEMORY', true),
+  offlineVoice: flag('FEATURE_OFFLINE_VOICE', true),
+  voiceCloudFallback: flag('FEATURE_VOICE_CLOUD_FALLBACK', false),
 } as const;
 
 export type FeatureName = keyof typeof features;

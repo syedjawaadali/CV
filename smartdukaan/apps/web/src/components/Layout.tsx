@@ -8,6 +8,7 @@ import { PERMISSIONS, type Permission } from '@smartdukaan/shared';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nContext';
 import type { StringKey } from '../i18n/strings';
+import { VoiceAssistant } from './VoiceAssistant';
 
 interface NavItem { to: string; label: StringKey; icon: typeof BarChart3; permission: Permission }
 
@@ -116,6 +117,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>
+      <VoiceAssistant />
     </div>
   );
 
