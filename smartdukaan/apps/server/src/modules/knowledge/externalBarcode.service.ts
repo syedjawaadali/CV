@@ -34,6 +34,10 @@ export interface BarcodeDbProvider {
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const NEG_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // negatives expire sooner
+// A miss recorded while web search was NOT configured is incomplete (we never
+// consulted web search), so it must expire quickly — otherwise, once web search
+// is enabled, the stale negative would keep masking a now-resolvable product.
+const INCOMPLETE_NEG_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const TIMEOUT_MS = 6000;
 
 /** Open Food Facts adapter — free, open, no key. Best for grocery/branded items. */
@@ -107,7 +111,8 @@ export async function lookupExternalBarcode(rawBarcode: string): Promise<Externa
 
   // Fallback: if the open DB has nothing, try the web-search resolver (Daraz /
   // Bin Hashim / etc. via an approved Search API) — only when it's configured.
-  if (!result.found && webSearchConfigured()) {
+  const webSearchAvailable = webSearchConfigured();
+  if (!result.found && webSearchAvailable) {
     try {
       const web = await resolveBarcodeViaWebSearch(barcode);
       if (web?.found && web.name) {
@@ -119,7 +124,12 @@ export async function lookupExternalBarcode(rawBarcode: string): Promise<Externa
     } catch { /* web search is best-effort */ }
   }
 
-  const ttl = result.found ? CACHE_TTL_MS : NEG_CACHE_TTL_MS;
+  // A negative found without consulting web search is incomplete → short TTL so
+  // it cannot durably mask a product that becomes resolvable once web search is
+  // enabled. A positive, or a negative after a full lookup, gets the long TTL.
+  const ttl = result.found
+    ? CACHE_TTL_MS
+    : webSearchAvailable ? NEG_CACHE_TTL_MS : INCOMPLETE_NEG_CACHE_TTL_MS;
   const expires = new Date(Date.now() + ttl).toISOString();
   await query(
     `INSERT INTO external_barcode_cache

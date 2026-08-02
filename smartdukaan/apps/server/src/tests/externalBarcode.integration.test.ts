@@ -2,8 +2,9 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { api, registerOwner, resetDb, type Session } from './helpers.js';
 import { pool, closePool } from '../db/pool.js';
 import { setBarcodeDbProvider, type BarcodeDbProvider } from '../modules/knowledge/externalBarcode.service.js';
+import { setWebSearchProvider } from '../modules/knowledge/webSearch.service.js';
 
-afterAll(async () => { setBarcodeDbProvider(null); await closePool(); });
+afterAll(async () => { setBarcodeDbProvider(null); setWebSearchProvider(null); await closePool(); });
 
 // Deterministic mock public-DB provider — no real network in tests.
 const mockProvider: BarcodeDbProvider = {
@@ -66,5 +67,19 @@ describe('Public barcode database enrichment', () => {
     expect(calls).toBe(1); // second scan served from cache
     const cache = await pool.query(`SELECT count(*)::int n FROM external_barcode_cache WHERE barcode_normalized='5901234123457'`);
     expect(cache.rows[0].n).toBe(1);
+  });
+
+  it('a miss while web search is UNCONFIGURED is cached only briefly (so it cannot durably mask a later resolvable product)', async () => {
+    setWebSearchProvider(null); // web search not configured at lookup time
+    const owner = await registerOwner();
+    await api(owner.token).post('/api/kb/recognize').send({ barcode: '8964000000017' });
+    const row = await pool.query<{ found: boolean; ttl_hours: number }>(
+      `SELECT found, EXTRACT(EPOCH FROM (expires_at - now()))/3600 AS ttl_hours
+         FROM external_barcode_cache WHERE barcode_normalized='8964000000017'`,
+    );
+    const cached = row.rows[0]!;
+    expect(cached.found).toBe(false);
+    // Incomplete negative → ~1h TTL, well under the 7-day full-negative TTL.
+    expect(Number(cached.ttl_hours)).toBeLessThan(2);
   });
 });
