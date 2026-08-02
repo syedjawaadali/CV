@@ -19,6 +19,7 @@ interface RecognizeResult {
   candidates: Candidate[];
   priceChange: { observedPrintedMinor: number; previousPrintedMinor: number | null; sellingPriceMinor: number | null; differs: boolean } | null;
   packagingChange: { classification: string; note: string } | null;
+  externalMatch: { provider: string; name: string | null; brand: string | null; packSize: string | null; imageUrl: string | null } | null;
 }
 
 export interface RecognizePrefill { name: string; barcode: string | null; sellingPrice?: number; category?: string | null }
@@ -192,6 +193,30 @@ export function RecognizeModal({ onClose, onCreateNew }: {
           )}
           {result.packagingChange && (
             <p className="text-xs text-slate-500">{result.packagingChange.note}</p>
+          )}
+
+          {/* Public barcode database suggestion (unverified — prefill only). */}
+          {result.externalMatch && (result.externalMatch.name || result.externalMatch.brand) && (
+            <div className="rounded-lg border border-sky-200 bg-sky-50 p-3">
+              <div className="flex items-center gap-2">
+                {result.externalMatch.imageUrl && (
+                  <img src={result.externalMatch.imageUrl} alt="" className="h-10 w-10 rounded object-cover" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-900">
+                    {[result.externalMatch.brand, result.externalMatch.name].filter(Boolean).join(' ')}
+                    {result.externalMatch.packSize && <span className="ms-2 text-xs text-slate-500">{result.externalMatch.packSize}</span>}
+                  </p>
+                  <p className="text-xs text-sky-700">{L('Found online — please check and confirm', 'آن لائن ملا — جانچ کر تصدیق کریں')}</p>
+                </div>
+                <Button className="shrink-0 px-3 py-1.5 text-sm" onClick={() => onCreateNew({
+                  name: [result.externalMatch!.brand, result.externalMatch!.name].filter(Boolean).join(' ') || (result.externalMatch!.name ?? ''),
+                  barcode,
+                })}>
+                  <Check className="h-4 w-4" /> {L('Use', 'استعمال')}
+                </Button>
+              </div>
+            </div>
           )}
 
           {result.candidates.length === 0 ? (

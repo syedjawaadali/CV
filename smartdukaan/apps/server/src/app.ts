@@ -35,7 +35,8 @@ export function createApp(): Express {
       contentSecurityPolicy: {
         useDefaults: true,
         directives: {
-          'img-src': ["'self'", 'data:', 'blob:'],
+          // Allow public product images (Open Food Facts) for barcode enrichment.
+          'img-src': ["'self'", 'data:', 'blob:', 'https://images.openfoodfacts.org', 'https://static.openfoodfacts.org'],
           'script-src': ["'self'"],
           'style-src': ["'self'", "'unsafe-inline'"],
           'connect-src': ["'self'"],

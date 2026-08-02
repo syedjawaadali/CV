@@ -8,6 +8,7 @@ import { query, withTransaction } from '../../db/pool.js';
 import { features } from '../../config/features.js';
 import { findVisualCandidates } from '../cloud/fingerprint.service.js';
 import { learningSignalsFor } from './feedback.service.js';
+import { lookupExternalBarcode } from './externalBarcode.service.js';
 
 /**
  * Local-first product recognition (Phase 3). Combines barcode evidence with
@@ -203,6 +204,22 @@ export async function recognize(ctx: Ctx, input: RecognizeInput) {
   const topIsRetailer = top?.c.kind === 'retailer';
   const recommendedAction = top ? decideAction(overallCategory, topIsRetailer) : 'manual_or_create';
 
+  // --- Public barcode database enrichment (Phase: external lookup) ------------
+  // Only when nothing matched locally/shared AND a real barcode was scanned:
+  // enrich from an open public DB so the create-product form can be prefilled.
+  // This is an UNVERIFIED suggestion — it never auto-creates a product.
+  let externalMatch: {
+    provider: string; name: string | null; brand: string | null; packSize: string | null; imageUrl: string | null;
+  } | null = null;
+  if (features.externalBarcodeLookup && scored.length === 0 && normBarcode && (info?.classification === 'standard_valid' || info?.classification === 'standard_invalid')) {
+    try {
+      const ext = await lookupExternalBarcode(normBarcode);
+      if (ext?.found) {
+        externalMatch = { provider: ext.provider, name: ext.name, brand: ext.brand, packSize: ext.packSize, imageUrl: ext.imageUrl };
+      }
+    } catch { /* external lookup is best-effort; never blocks recognition */ }
+  }
+
   // --- Packaging-change + price-change evaluation (deterministic) -------------
   const packagingChange = evaluatePackagingChange(top, attrs);
   const priceChange = await evaluatePriceChange(ctx, top, attrs);
@@ -264,6 +281,7 @@ export async function recognize(ctx: Ctx, input: RecognizeInput) {
     })),
     packagingChange,
     priceChange,
+    externalMatch,
   };
 }
 
