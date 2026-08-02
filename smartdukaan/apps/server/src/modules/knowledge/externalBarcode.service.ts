@@ -14,6 +14,7 @@
 import { normalizeBarcode } from '@smartdukaan/shared';
 import { query } from '../../db/pool.js';
 import { logger } from '../../lib/logger.js';
+import { resolveBarcodeViaWebSearch, webSearchConfigured } from './webSearch.service.js';
 
 export interface ExternalProduct {
   found: boolean;
@@ -102,7 +103,22 @@ export async function lookupExternalBarcode(rawBarcode: string): Promise<Externa
     };
   }
 
-  const result = await provider.lookup(barcode);
+  let result = await provider.lookup(barcode);
+
+  // Fallback: if the open DB has nothing, try the web-search resolver (Daraz /
+  // Bin Hashim / etc. via an approved Search API) — only when it's configured.
+  if (!result.found && webSearchConfigured()) {
+    try {
+      const web = await resolveBarcodeViaWebSearch(barcode);
+      if (web?.found && web.name) {
+        result = {
+          found: true, provider: 'websearch', name: web.name, brand: web.brand,
+          packSize: web.packSize, quantityValue: null, quantityUnit: null, imageUrl: null,
+        };
+      }
+    } catch { /* web search is best-effort */ }
+  }
+
   const ttl = result.found ? CACHE_TTL_MS : NEG_CACHE_TTL_MS;
   const expires = new Date(Date.now() + ttl).toISOString();
   await query(

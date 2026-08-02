@@ -31,6 +31,11 @@ const schema = z.object({
   GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
   AI_DAILY_REQUEST_LIMIT: z.coerce.number().int().nonnegative().default(200),
   AI_DAILY_COST_LIMIT_MINOR: z.coerce.number().int().nonnegative().default(50_000), // PKR 500.00/day default ceiling
+  // Web-search barcode resolver (backend-only). Provider + key gate the online
+  // discovery path; without a key it is skipped and the app falls back to Open
+  // Food Facts + manual entry. 'brave' = Brave Search API, 'serpapi' = SerpApi.
+  WEB_SEARCH_PROVIDER: z.enum(['none', 'brave', 'serpapi']).default('none'),
+  WEB_SEARCH_API_KEY: z.string().optional(),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -71,6 +76,10 @@ export const env = {
     geminiModel: raw.GEMINI_MODEL,
     dailyRequestLimit: raw.AI_DAILY_REQUEST_LIMIT,
     dailyCostLimitMinor: raw.AI_DAILY_COST_LIMIT_MINOR,
+  },
+  webSearch: {
+    provider: raw.WEB_SEARCH_PROVIDER,
+    apiKey: raw.WEB_SEARCH_API_KEY ?? '',
   },
 } as const;
 
