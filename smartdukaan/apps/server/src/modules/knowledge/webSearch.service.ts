@@ -62,8 +62,36 @@ export class SerpApiProvider implements WebSearchProvider {
   }
 }
 
+/** Serper.dev adapter — real Google results via a simple API. Generous one-time
+ *  free tier (2,500 searches) and cheap thereafter; works for new signups today,
+ *  unlike Google's own JSON API which is closed to new projects. Needs only a key. */
+export class SerperProvider implements WebSearchProvider {
+  readonly name = 'serper';
+  constructor(private apiKey: string) {}
+  async search(query: string): Promise<SearchResult[]> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        signal: ctrl.signal,
+        headers: { 'X-API-KEY': this.apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: query, gl: 'pk', num: 10 }),
+      });
+      if (!res.ok) return [];
+      const json = (await res.json()) as { organic?: Array<{ title?: string; snippet?: string; link?: string }> };
+      return (json.organic ?? []).map((r) => ({ title: r.title ?? '', snippet: r.snippet ?? null, url: r.link ?? null }));
+    } catch (err) {
+      logger.warn('web search failed', { provider: this.name, error: (err as Error).message });
+      return [];
+    } finally { clearTimeout(timer); }
+  }
+}
+
 /** Google Programmable Search (Custom Search JSON API) — real free tier: 100
- *  queries/day. Needs an API key + a Programmable Search Engine id (cx). */
+ *  queries/day. Needs an API key + a Programmable Search Engine id (cx).
+ *  NOTE: Google closed this API to projects created after Jan 2026; use Serper
+ *  for new deployments. Kept for existing pre-2026 projects. */
 export class GoogleSearchProvider implements WebSearchProvider {
   readonly name = 'google';
   constructor(private apiKey: string, private cx: string) {}
@@ -91,6 +119,7 @@ export function setWebSearchProvider(p: WebSearchProvider | null): void { overri
 export function getWebSearchProvider(): WebSearchProvider | null {
   if (override) return override;
   if (env.webSearch.provider === 'brave' && env.webSearch.apiKey) return new BraveSearchProvider(env.webSearch.apiKey);
+  if (env.webSearch.provider === 'serper' && env.webSearch.apiKey) return new SerperProvider(env.webSearch.apiKey);
   if (env.webSearch.provider === 'serpapi' && env.webSearch.apiKey) return new SerpApiProvider(env.webSearch.apiKey);
   if (env.webSearch.provider === 'google' && env.webSearch.apiKey && env.webSearch.cx) return new GoogleSearchProvider(env.webSearch.apiKey, env.webSearch.cx);
   return null; // not configured → path is skipped

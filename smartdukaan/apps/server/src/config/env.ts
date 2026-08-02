@@ -34,7 +34,7 @@ const schema = z.object({
   // Web-search barcode resolver (backend-only). Provider + key gate the online
   // discovery path; without a key it is skipped and the app falls back to Open
   // Food Facts + manual entry. 'brave' = Brave Search API, 'serpapi' = SerpApi.
-  WEB_SEARCH_PROVIDER: z.enum(['none', 'brave', 'serpapi', 'google']).default('none'),
+  WEB_SEARCH_PROVIDER: z.enum(['none', 'brave', 'serper', 'serpapi', 'google']).default('none'),
   WEB_SEARCH_API_KEY: z.string().optional(),
   WEB_SEARCH_CX: z.string().optional(), // Google Programmable Search engine id (cx)
 });
