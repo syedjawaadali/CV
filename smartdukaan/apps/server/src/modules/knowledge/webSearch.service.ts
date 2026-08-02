@@ -62,6 +62,28 @@ export class SerpApiProvider implements WebSearchProvider {
   }
 }
 
+/** Google Programmable Search (Custom Search JSON API) — real free tier: 100
+ *  queries/day. Needs an API key + a Programmable Search Engine id (cx). */
+export class GoogleSearchProvider implements WebSearchProvider {
+  readonly name = 'google';
+  constructor(private apiKey: string, private cx: string) {}
+  async search(query: string): Promise<SearchResult[]> {
+    const url = `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(this.apiKey)}`
+      + `&cx=${encodeURIComponent(this.cx)}&num=8&gl=pk&q=${encodeURIComponent(query)}`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) return [];
+      const json = (await res.json()) as { items?: Array<{ title?: string; snippet?: string; link?: string }> };
+      return (json.items ?? []).map((r) => ({ title: r.title ?? '', snippet: r.snippet ?? null, url: r.link ?? null }));
+    } catch (err) {
+      logger.warn('web search failed', { provider: this.name, error: (err as Error).message });
+      return [];
+    } finally { clearTimeout(timer); }
+  }
+}
+
 let override: WebSearchProvider | null = null;
 /** Test hook — inject a deterministic search provider (no real network in tests). */
 export function setWebSearchProvider(p: WebSearchProvider | null): void { override = p; }
@@ -70,6 +92,7 @@ export function getWebSearchProvider(): WebSearchProvider | null {
   if (override) return override;
   if (env.webSearch.provider === 'brave' && env.webSearch.apiKey) return new BraveSearchProvider(env.webSearch.apiKey);
   if (env.webSearch.provider === 'serpapi' && env.webSearch.apiKey) return new SerpApiProvider(env.webSearch.apiKey);
+  if (env.webSearch.provider === 'google' && env.webSearch.apiKey && env.webSearch.cx) return new GoogleSearchProvider(env.webSearch.apiKey, env.webSearch.cx);
   return null; // not configured → path is skipped
 }
 
