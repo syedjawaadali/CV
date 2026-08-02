@@ -14,7 +14,14 @@ export function isNative(): boolean {
 /* -------------------------------------------------- barcode scanning (MLKit) */
 
 export async function scanBarcode(): Promise<string | null> {
-  if (!isNative()) return null;
+  // On the web / desktop (no camera scanner), fall back to manual barcode entry
+  // so the same "Scan" action still works — the shopkeeper types the number.
+  if (!isNative()) {
+    if (typeof window === 'undefined' || typeof window.prompt !== 'function') return null;
+    const entered = window.prompt('Enter the barcode number');
+    const digits = (entered ?? '').replace(/\D/g, '');
+    return digits.length >= 6 ? digits : null;
+  }
   try {
     const { BarcodeScanner } = await import('@capacitor-mlkit/barcode-scanning');
     const { supported } = await BarcodeScanner.isSupported();

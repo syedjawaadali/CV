@@ -24,6 +24,17 @@ interface RecognizeResult {
 
 export interface RecognizePrefill { name: string; barcode: string | null; sellingPrice?: number; category?: string | null }
 
+/** Combine brand + name for display without repeating the brand when the name
+ *  already begins with it (e.g. brand "Hashmi" + name "Hashmi Ispaghol Sachet"
+ *  → "Hashmi Ispaghol Sachet", not "Hashmi Hashmi Ispaghol Sachet"). */
+function externalDisplayName(m: { brand: string | null; name: string | null }): string {
+  const name = (m.name ?? '').trim();
+  const brand = (m.brand ?? '').trim();
+  if (!brand) return name;
+  if (!name) return brand;
+  return name.toLowerCase().startsWith(brand.toLowerCase()) ? name : `${brand} ${name}`;
+}
+
 const TONE: Record<string, 'green' | 'brand' | 'amber' | 'red' | 'slate'> = {
   exact: 'green', high: 'brand', medium: 'amber', low: 'slate', conflict: 'red',
 };
@@ -204,13 +215,13 @@ export function RecognizeModal({ onClose, onCreateNew }: {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-900">
-                    {[result.externalMatch.brand, result.externalMatch.name].filter(Boolean).join(' ')}
+                    {externalDisplayName(result.externalMatch)}
                     {result.externalMatch.packSize && <span className="ms-2 text-xs text-slate-500">{result.externalMatch.packSize}</span>}
                   </p>
                   <p className="text-xs text-sky-700">{L('Found online — please check and confirm', 'آن لائن ملا — جانچ کر تصدیق کریں')}</p>
                 </div>
                 <Button className="shrink-0 px-3 py-1.5 text-sm" onClick={() => onCreateNew({
-                  name: [result.externalMatch!.brand, result.externalMatch!.name].filter(Boolean).join(' ') || (result.externalMatch!.name ?? ''),
+                  name: externalDisplayName(result.externalMatch!),
                   barcode,
                 })}>
                   <Check className="h-4 w-4" /> {L('Use', 'استعمال')}
