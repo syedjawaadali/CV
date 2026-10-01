@@ -1,42 +1,64 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 
-  /* Fluid type scale — smooth clamp() ramps replace hard px breakpoints.
-     Each token: clamp(min, preferred-vw, max) so nothing overflows on
-     mid-size screens and sizing grows continuously instead of in jumps. */
-  --text-display: clamp(2.75rem, 8.5vw, 8.5rem);   /* hero headline */
-  --text-hero: clamp(3rem, 12vw, 11rem);           /* preloader / footer statement */
-  --text-h2: clamp(2rem, 4.5vw, 3.75rem);          /* section titles */
-  --text-h3: clamp(1.375rem, 2.6vw, 2.25rem);      /* card / role titles */
-  --text-lead: clamp(1.375rem, 3.2vw, 2.5rem);     /* large lead paragraphs */
-  --text-stat: clamp(2.5rem, 5vw, 4rem);           /* stat numbers */
-  --text-body: clamp(1rem, 1.4vw, 1.125rem);       /* body copy */
-  --text-subhead: clamp(1.125rem, 2vw, 1.6rem);    /* hero sub paragraph */
+  /* Restrained, professional fluid type scale */
+  --text-display: clamp(2.5rem, 5.5vw, 4.75rem);   /* hero headline */
+  --text-h2:      clamp(1.75rem, 3vw, 2.75rem);    /* section titles */
+  --text-h3:      clamp(1.125rem, 1.6vw, 1.5rem);  /* card / role titles */
+  --text-lead:    clamp(1.125rem, 1.8vw, 1.5rem);  /* lead paragraphs */
+  --text-stat:    clamp(1.875rem, 3vw, 2.75rem);   /* stat numbers */
+  --text-body:    clamp(0.95rem, 1vw, 1.05rem);    /* body copy */
+
+  /* Palette */
+  --bg:        #0a0b10;
+  --surface:   rgba(255, 255, 255, 0.025);
+  --border:    rgba(255, 255, 255, 0.08);
+  --accent:    #38bdf8;
+  --accent-2:  #6366f1;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
-  background-color: #050505;
-  color: #f5f5f5;
+  background-color: var(--bg);
+  color: #e7e9ee;
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  cursor: none;
 }
 
-@media (pointer: coarse) {
-  body { cursor: auto; }
+/* Static, GPU-cheap backdrop — no per-frame animation, no huge blur filters.
+   Layered radial glows + a faint grid give depth for free. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(900px 600px at 78% -5%, rgba(56, 189, 248, 0.10), transparent 60%),
+    radial-gradient(800px 600px at 8% 12%, rgba(99, 102, 241, 0.10), transparent 55%),
+    radial-gradient(1000px 800px at 50% 110%, rgba(56, 189, 248, 0.06), transparent 60%),
+    var(--bg);
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 40%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 40%, transparent 85%);
+  opacity: 0.5;
 }
 
-/* Respect users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
@@ -46,59 +68,63 @@ body {
   }
 }
 
-/* --- Fluid type utilities --- */
-.text-display  { font-size: var(--text-display); line-height: 0.92; letter-spacing: -0.03em; }
-.text-hero     { font-size: var(--text-hero); line-height: 0.9; letter-spacing: -0.04em; }
-.text-h2       { font-size: var(--text-h2); line-height: 1.02; letter-spacing: -0.025em; }
-.text-h3       { font-size: var(--text-h3); line-height: 1.1; letter-spacing: -0.015em; }
-.text-lead     { font-size: var(--text-lead); line-height: 1.25; }
-.text-stat     { font-size: var(--text-stat); line-height: 1; letter-spacing: -0.02em; }
-.text-body     { font-size: var(--text-body); line-height: 1.7; }
-.text-subhead  { font-size: var(--text-subhead); line-height: 1.5; }
+/* --- Type utilities --- */
+.text-display { font-size: var(--text-display); line-height: 1.02; letter-spacing: -0.03em; }
+.text-h2      { font-size: var(--text-h2); line-height: 1.08; letter-spacing: -0.02em; }
+.text-h3      { font-size: var(--text-h3); line-height: 1.25; letter-spacing: -0.01em; }
+.text-lead    { font-size: var(--text-lead); line-height: 1.5; }
+.text-stat    { font-size: var(--text-stat); line-height: 1; letter-spacing: -0.02em; }
+.text-body    { font-size: var(--text-body); line-height: 1.7; }
 
-.glass-panel {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+/* Card surface — light blur only, cheap to composite */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  will-change: transform;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-/* Gradient accent text for modern headline highlights */
+.glass {
+  background: rgba(12, 14, 20, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Gradient accent text */
 .text-gradient {
-  background: linear-gradient(120deg, #22d3ee 0%, #3b82f6 55%, #818cf8 100%);
+  background: linear-gradient(100deg, #38bdf8 0%, #818cf8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.text-stroke {
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.4);
-  transition: all 0.3s ease;
+/* Hero 3D panel — pure CSS perspective, one gentle transform-only float */
+.scene { perspective: 1400px; }
+.tilt-3d {
+  transform: rotateY(-16deg) rotateX(8deg) translateZ(0);
+  transform-style: preserve-3d;
+  animation: float 7s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: rotateY(-16deg) rotateX(8deg) translateY(0); }
+  50%      { transform: rotateY(-13deg) rotateX(6deg) translateY(-12px); }
+}
+.float-chip { animation: floatChip 5.5s ease-in-out infinite; }
+@keyframes floatChip {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 
-.text-stroke:hover {
-  color: #ffffff;
-  -webkit-text-stroke: 1px transparent;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #07080c; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 10px; border: 2px solid #07080c; }
+::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.5); }
 
-/* Custom Scrollbar for better visibility */
-::-webkit-scrollbar {
-  width: 10px;
-}
-::-webkit-scrollbar-track {
-  background: #050505;
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  border: 2px solid #050505;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(6, 182, 212, 0.5); /* Cyan hover */
-}
-
-::selection {
-  background: rgba(34, 211, 238, 0.3);
-  color: #ffffff;
-}
+::selection { background: rgba(56, 189, 248, 0.3); color: #fff; }
