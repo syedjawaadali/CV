@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence, useSpring, useMotionValue } from 'motion/react';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
-  ArrowUpRight, Database, LineChart, Terminal, Cpu, Linkedin, Github, Mail, Phone,
-  Award, GraduationCap, Building2, BarChart3, GitBranch, Presentation, X,
-  MapPin, Layers, CheckCircle2, Clock, ExternalLink, Sparkles,
+  Mail, Phone, Linkedin, Github, ArrowRight, ArrowUpRight, ExternalLink,
+  Database, LineChart, Terminal, Cpu, Award, GraduationCap, Building2,
+  MapPin, Presentation, Layers, CheckCircle2, Clock, GitBranch, Sparkles,
+  BarChart3, X,
 } from 'lucide-react';
-import { PhosphorBackground } from './components/ui/phosphor-30';
 import {
   profile, stats, coreCompetencies, skillGroups, experienceData, trainingData,
   courseModules, clientProjects, githubProjects, dashboards, education,
@@ -19,673 +19,501 @@ const NAV = [
   { label: 'Training', href: '#training' },
   { label: 'Projects', href: '#projects' },
   { label: 'Dashboards', href: '#dashboards' },
-  { label: 'Contact', href: '#contact' },
 ];
 
+const HERO_IMG = dashboards.find((d) => d.title.startsWith('Regional Sales')) ?? dashboards[0];
+
 export default function App() {
-  const [loading, setLoading] = useState(true);
-
   return (
-    <div className="bg-[#050505] min-h-screen text-[#f5f5f5] font-sans selection:bg-cyan-500/30 overflow-hidden relative">
-      <CustomCursor />
-      <AmbientOrbs />
-      <NoiseOverlay />
-
-      <AnimatePresence mode="wait">
-        {loading ? (
-          <Preloader key="preloader" onComplete={() => setLoading(false)} />
-        ) : (
-          <motion.div
-            key="main"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-10"
-          >
-            <Navbar />
-            <main>
-              <HeroSection />
-              <IntroSection />
-              <CompetenciesSection />
-              <SkillsSection />
-              <ExperienceSection />
-              <TrainingSection />
-              <ProjectsSection />
-              <DashboardGallery />
-              <EducationSection />
-            </main>
-            <Footer />
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="min-h-screen text-[#e7e9ee] font-sans antialiased">
+      <Header />
+      <main>
+        <Hero />
+        <Stats />
+        <Competencies />
+        <Skills />
+        <Experience />
+        <Training />
+        <Projects />
+        <Gallery />
+        <EducationBlock />
+      </main>
+      <Footer />
     </div>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Preloader                                                              */
-/* ----------------------------------------------------------------------- */
-function Preloader({ onComplete }: { onComplete: () => void }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let current = 0;
-    const interval = setInterval(() => {
-      current += 2;
-      if (current >= 100) {
-        setCount(100);
-        clearInterval(interval);
-        setTimeout(onComplete, 500);
-      } else setCount(current);
-    }, 40);
-    return () => clearInterval(interval);
-  }, [onComplete]);
+/* --------------------------------------------------------------------- */
+/*  Primitives                                                           */
+/* --------------------------------------------------------------------- */
+function Container({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`mx-auto w-full max-w-6xl px-5 sm:px-6 ${className}`}>{children}</div>;
+}
 
+function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
     <motion.div
-      exit={{ y: '-100%', opacity: 0 }}
-      transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
-      className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center overflow-hidden"
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-hero font-display font-bold text-white"
-      >
-        {count}%
-      </motion.div>
-      <div className="mt-8 flex items-center gap-6">
-        <div className="w-16 h-[2px] bg-cyan-500 rounded-full" />
-        <span className="font-mono text-sm md:text-base tracking-[0.4em] text-cyan-400 uppercase font-bold">
-          {profile.name}
-        </span>
-        <div className="w-16 h-[2px] bg-cyan-500 rounded-full" />
-      </div>
-    </motion.div>
-  );
-}
-
-/* ----------------------------------------------------------------------- */
-/*  Ambient / background                                                   */
-/* ----------------------------------------------------------------------- */
-function AmbientOrbs() {
-  return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      <motion.div
-        animate={{ x: [0, 50, 0, -50, 0], y: [0, -50, 50, 0, 0], scale: [1, 1.1, 1, 1.2, 1] }}
-        transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
-        className="absolute top-[10%] left-[5%] w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-cyan-600/10 rounded-full blur-[110px] md:blur-[150px] mix-blend-screen"
-      />
-      <motion.div
-        animate={{ x: [0, -50, 0, 50, 0], y: [0, 50, -50, 0, 0], scale: [1, 1.2, 1, 1.1, 1] }}
-        transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
-        className="absolute bottom-[5%] right-[5%] w-[500px] h-[500px] md:w-[800px] md:h-[800px] bg-blue-700/10 rounded-full blur-[130px] md:blur-[180px] mix-blend-screen"
-      />
-    </div>
-  );
-}
-
-function CustomCursor() {
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
-  const springConfig = { damping: 25, stiffness: 700, mass: 0.5 };
-  const cursorXSpring = useSpring(cursorX, springConfig);
-  const cursorYSpring = useSpring(cursorY, springConfig);
-  const [isHovering, setIsHovering] = useState(false);
-
-  useEffect(() => {
-    const moveCursor = (e: MouseEvent) => { cursorX.set(e.clientX - 16); cursorY.set(e.clientY - 16); };
-    const handleHover = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      setIsHovering(!!target.closest('a, button, .hover-target'));
-    };
-    window.addEventListener('mousemove', moveCursor);
-    window.addEventListener('mouseover', handleHover);
-    return () => {
-      window.removeEventListener('mousemove', moveCursor);
-      window.removeEventListener('mouseover', handleHover);
-    };
-  }, [cursorX, cursorY]);
-
-  return (
-    <motion.div
-      className="fixed top-0 left-0 w-8 h-8 rounded-full bg-white mix-blend-difference pointer-events-none z-[9999] hidden md:block"
-      style={{ x: cursorXSpring, y: cursorYSpring, scale: isHovering ? 2.5 : 1 }}
-    />
-  );
-}
-
-function NoiseOverlay() {
-  return (
-    <div
-      className="fixed inset-0 pointer-events-none z-[90] opacity-[0.03] mix-blend-overlay"
-      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-    />
-  );
-}
-
-/* ----------------------------------------------------------------------- */
-/*  Reusable                                                               */
-/* ----------------------------------------------------------------------- */
-function ZoomSection({ children, id, className = '' }: { children: React.ReactNode; id?: string; className?: string }) {
-  return (
-    <motion.section
-      id={id}
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-8% 0px -8% 0px' }}
-      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.5, ease: 'easeOut', delay }}
       className={className}
     >
       {children}
-    </motion.section>
-  );
-}
-
-function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
-  return (
-    <div className="mb-14 md:mb-16">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-10 h-[2px] bg-cyan-500 rounded-full" />
-        <span className="font-mono text-cyan-500 uppercase tracking-[0.3em] text-xs md:text-sm font-bold">{title}</span>
-      </div>
-      <h2 className="text-h2 font-display font-bold text-white drop-shadow-lg">{subtitle}</h2>
-    </div>
-  );
-}
-
-function Tilt({ children, className = '', intensity = 5 }: { children: React.ReactNode; className?: string; intensity?: number }) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const mx = useSpring(x, { stiffness: 300, damping: 30 });
-  const my = useSpring(y, { stiffness: 300, damping: 30 });
-  const rotateX = useTransform(my, [-0.5, 0.5], [`${intensity}deg`, `-${intensity}deg`]);
-  const rotateY = useTransform(mx, [-0.5, 0.5], [`-${intensity}deg`, `${intensity}deg`]);
-
-  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    x.set((e.clientX - rect.left) / rect.width - 0.5);
-    y.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-  const onLeave = () => { x.set(0); y.set(0); };
-
-  return (
-    <motion.div onMouseMove={onMove} onMouseLeave={onLeave} style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }} className={`w-full ${className}`}>
-      <div className={`w-full transition-transform duration-300 md:hover:scale-[1.02] ${className.includes('h-full') ? 'h-full' : ''}`}>
-        {children}
-      </div>
     </motion.div>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Navbar                                                                 */
-/* ----------------------------------------------------------------------- */
-function Navbar() {
+function SectionHead({ eyebrow, title, intro }: { eyebrow: string; title: string; intro?: string }) {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-6 md:py-8 mix-blend-difference text-white pointer-events-none">
-      <div className="font-display font-bold text-lg md:text-2xl tracking-tighter pointer-events-auto hover-target uppercase">
-        <a href="#">{profile.name}</a>
+    <div className="mb-10 md:mb-14 max-w-3xl">
+      <div className="flex items-center gap-3 mb-3">
+        <span className="h-px w-8 bg-sky-400/80" />
+        <span className="font-mono text-xs uppercase tracking-[0.25em] text-sky-400">{eyebrow}</span>
       </div>
-      <div className="hidden lg:flex space-x-7 text-sm font-mono uppercase tracking-[0.18em] pointer-events-auto font-medium">
-        {NAV.map((item) => (
-          <a key={item.label} href={item.href} className="hover-target hover:text-cyan-400 transition-colors">{item.label}</a>
-        ))}
-      </div>
-    </nav>
+      <h2 className="text-h2 font-display font-bold text-white">{title}</h2>
+      {intro && <p className="text-body text-zinc-400 mt-4">{intro}</p>}
+    </div>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Hero — phosphor shader background                                       */
-/* ----------------------------------------------------------------------- */
-function HeroSection() {
-  const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 1000], [0, 200]);
-  const opacity = useTransform(scrollY, [0, 600], [1, 0]);
-
+function Section({ id, children, className = '' }: { id?: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className="relative min-h-screen flex flex-col justify-center px-6 md:px-12 pt-24 pb-12 overflow-hidden">
-      {/* Animated WebGL shader background */}
-      <div className="absolute inset-0 z-0">
-        <PhosphorBackground pixelRatio={1.4} />
-        {/* legibility overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-[#050505]/70" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/80 via-transparent to-transparent" />
-      </div>
-
-      <motion.div style={{ y: y1, opacity }} className="relative z-10 mt-auto">
-        <div className="mb-8 flex items-center gap-4">
-          <div className="w-12 h-[2px] bg-cyan-400" />
-          <span className="font-mono text-cyan-400 uppercase tracking-widest text-sm md:text-base font-bold">{profile.name}</span>
-        </div>
-
-        <h1 className="text-display font-display font-bold mb-8 select-none drop-shadow-2xl">
-          BUSINESS <br />
-          <span className="text-gradient italic pr-4 hover-target">INTELLIGENCE</span> <br />
-          LEADER
-        </h1>
-
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-t border-white/20 pt-8 mt-10">
-          <p className="text-subhead text-zinc-200 max-w-3xl font-light">
-            I architect governed data pipelines and craft executive BI dashboards that turn complex datasets into a single, trusted source of strategic insight.
-          </p>
-          <div className="flex flex-col items-start md:items-end font-mono text-sm text-zinc-400 uppercase tracking-widest">
-            <span>Based in</span>
-            <span className="text-white mt-1 font-bold">{profile.location}</span>
-          </div>
-        </div>
-      </motion.div>
+    <section id={id} className={`py-20 md:py-28 ${className}`}>
+      <Container>{children}</Container>
     </section>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Intro + stats                                                          */
-/* ----------------------------------------------------------------------- */
-function IntroSection() {
-  return (
-    <ZoomSection id="about" className="py-24 md:py-40 px-6 md:px-12 relative">
-      <SectionHeader title="01 // Profile" subtitle="Professional Summary." />
-      <div className="max-w-5xl">
-        <p className="text-lead font-light text-zinc-300 drop-shadow-md">
-          {profile.summary.split('—')[0]}—{' '}
-          <span className="text-gradient italic font-display font-medium">a single, trusted source</span> of institutional information for leadership.
-        </p>
-        <p className="text-body text-zinc-400 mt-8 max-w-4xl">{profile.summaryLong}</p>
+/* --------------------------------------------------------------------- */
+/*  Header                                                               */
+/* --------------------------------------------------------------------- */
+function Header() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 border-t border-white/20 pt-14">
-          {stats.map((s) => (
-            <div key={s.label} className="flex flex-col hover-target group">
-              <span className="text-stat font-display font-bold text-white mb-2 drop-shadow-lg group-hover:text-cyan-400 transition-colors">{s.value}</span>
-              <span className="text-sm font-mono text-zinc-400 uppercase tracking-widest font-medium">{s.label}</span>
-            </div>
+  return (
+    <header className={`fixed top-0 inset-x-0 z-50 transition-colors duration-300 ${scrolled ? 'glass border-b border-white/5' : ''}`}>
+      <Container className="flex items-center justify-between h-16">
+        <a href="#" className="font-display font-bold tracking-tight text-white text-base sm:text-lg">
+          Syed Jawaad Ali
+        </a>
+        <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-400">
+          {NAV.map((n) => (
+            <a key={n.label} href={n.href} className="hover:text-white transition-colors">{n.label}</a>
           ))}
-        </div>
-      </div>
-    </ZoomSection>
+        </nav>
+        <a
+          href={`mailto:${profile.email}`}
+          className="inline-flex items-center gap-2 rounded-full bg-sky-500 hover:bg-sky-400 text-[#06121b] font-semibold text-sm px-4 py-2 transition-colors"
+        >
+          <Mail className="w-4 h-4" /> <span className="hidden sm:inline">Contact</span>
+        </a>
+      </Container>
+    </header>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Core competencies                                                      */
-/* ----------------------------------------------------------------------- */
-function CompetenciesSection() {
+/* --------------------------------------------------------------------- */
+/*  Hero                                                                 */
+/* --------------------------------------------------------------------- */
+function Hero() {
   return (
-    <ZoomSection className="py-24 md:py-32 px-6 md:px-12 relative">
-      <SectionHeader title="02 // Strengths" subtitle="Core Competencies." />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-6xl">
-        {coreCompetencies.map((c, i) => (
+    <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+      <Container className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-10 items-center">
+        {/* Left */}
+        <div>
           <motion.div
-            key={c.area}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.5, delay: i * 0.06 }}
-            className={`glass-panel rounded-3xl p-7 md:p-8 border border-white/10 hover:border-cyan-500/30 transition-colors group ${i === 4 ? 'md:col-span-2' : ''}`}
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-mono text-zinc-300 mb-6"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <Sparkles className="w-5 h-5 text-cyan-400 shrink-0" />
-              <h3 className="text-h3 font-display font-bold text-white group-hover:text-cyan-300 transition-colors">{c.area}</h3>
-            </div>
-            <p className="text-body text-zinc-400">{c.detail}</p>
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Available for BI & analytics roles
           </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.05 }}
+            className="text-display font-display font-bold text-white"
+          >
+            Data & <span className="text-gradient">Business Intelligence</span> Leader
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.12 }}
+            className="text-lead text-zinc-300 mt-6 max-w-xl"
+          >
+            I turn messy, multi-source data into governed pipelines and executive dashboards leadership can actually trust — across telecom, banking, healthcare and retail.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.18 }}
+            className="flex flex-wrap items-center gap-3 mt-8"
+          >
+            <a href="#projects" className="inline-flex items-center gap-2 rounded-full bg-white text-black font-semibold text-sm px-5 py-2.5 hover:bg-zinc-200 transition-colors">
+              View work <ArrowRight className="w-4 h-4" />
+            </a>
+            <a href={profile.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/15 text-white font-medium text-sm px-5 py-2.5 hover:bg-white/5 transition-colors">
+              <Linkedin className="w-4 h-4" /> LinkedIn
+            </a>
+            <a href={profile.github} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/15 text-white font-medium text-sm px-5 py-2.5 hover:bg-white/5 transition-colors">
+              <Github className="w-4 h-4" /> GitHub
+            </a>
+          </motion.div>
+
+          <div className="mt-8 flex items-center gap-2 text-sm text-zinc-500">
+            <MapPin className="w-4 h-4" /> {profile.location}
+          </div>
+        </div>
+
+        {/* Right — CSS 3D dashboard panel */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="scene hidden sm:block"
+        >
+          <div className="relative">
+            <div className="tilt-3d relative rounded-2xl border border-white/10 bg-white/[0.03] p-2 shadow-[0_30px_80px_-20px_rgba(2,8,23,0.9)]">
+              <div className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-tr from-sky-500/20 to-indigo-500/20 blur-2xl" />
+              <img
+                src={HERO_IMG.thumb}
+                alt="Business intelligence dashboard"
+                width={820} height={512}
+                className="rounded-xl w-full h-auto"
+                loading="eager" decoding="async"
+              />
+            </div>
+            {/* floating depth chips */}
+            <div className="float-chip absolute -left-4 bottom-10 rounded-xl glass border border-white/10 px-4 py-3 shadow-xl">
+              <div className="text-xl font-display font-bold text-white">70%</div>
+              <div className="text-[11px] text-zinc-400">faster reporting</div>
+            </div>
+            <div className="float-chip absolute -right-3 -top-3 rounded-xl glass border border-white/10 px-4 py-3 shadow-xl" style={{ animationDelay: '1.2s' }}>
+              <div className="text-xl font-display font-bold text-white">100+</div>
+              <div className="text-[11px] text-zinc-400">dashboards shipped</div>
+            </div>
+          </div>
+        </motion.div>
+      </Container>
+    </section>
+  );
+}
+
+/* --------------------------------------------------------------------- */
+/*  Stats                                                                */
+/* --------------------------------------------------------------------- */
+function Stats() {
+  return (
+    <section id="about" className="border-y border-white/5 bg-white/[0.015]">
+      <Container className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
+        {stats.map((s, i) => (
+          <Reveal key={s.label} delay={i * 0.05} className="py-8 px-5 text-center md:text-left">
+            <div className="text-stat font-display font-bold text-white">{s.value}</div>
+            <div className="text-xs font-mono uppercase tracking-wider text-zinc-500 mt-1">{s.label}</div>
+          </Reveal>
+        ))}
+      </Container>
+    </section>
+  );
+}
+
+/* --------------------------------------------------------------------- */
+/*  About / Summary + Competencies                                      */
+/* --------------------------------------------------------------------- */
+function Competencies() {
+  return (
+    <Section>
+      <SectionHead eyebrow="01 — Profile" title="What I bring to the table" intro={profile.summary} />
+      <div className="grid md:grid-cols-2 gap-4">
+        {coreCompetencies.map((c, i) => (
+          <Reveal key={c.area} delay={(i % 2) * 0.05}>
+            <div className="card card-hover h-full p-6">
+              <div className="flex items-center gap-2.5 mb-2">
+                <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
+                <h3 className="text-h3 font-display font-semibold text-white">{c.area}</h3>
+              </div>
+              <p className="text-body text-zinc-400">{c.detail}</p>
+            </div>
+          </Reveal>
         ))}
       </div>
-    </ZoomSection>
+    </Section>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Skills                                                                 */
-/* ----------------------------------------------------------------------- */
+/* --------------------------------------------------------------------- */
+/*  Skills                                                               */
+/* --------------------------------------------------------------------- */
 const SKILL_ICONS: Record<string, React.ReactNode> = {
-  chart: <LineChart className="w-8 h-8 text-cyan-400" />,
-  database: <Database className="w-8 h-8 text-blue-500" />,
-  terminal: <Terminal className="w-8 h-8 text-indigo-400" />,
-  cpu: <Cpu className="w-8 h-8 text-purple-400" />,
+  chart: <LineChart className="w-5 h-5" />,
+  database: <Database className="w-5 h-5" />,
+  terminal: <Terminal className="w-5 h-5" />,
+  cpu: <Cpu className="w-5 h-5" />,
 };
 
-function SkillsSection() {
+function Skills() {
   return (
-    <ZoomSection id="skills" className="py-24 md:py-40 px-6 md:px-12 relative bg-black/40 border-y border-white/5 backdrop-blur-xl">
-      <SectionHeader title="03 // Arsenal" subtitle="Technical Expertise." />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl">
-        {skillGroups.map((skill, i) => (
-          <Tilt key={i} className="h-full">
-            <div className="glass-panel p-8 md:p-10 rounded-3xl h-full flex flex-col shadow-2xl border border-white/10 bg-white/[0.02]">
-              <div className="mb-6 p-4 rounded-2xl bg-white/5 inline-block w-fit backdrop-blur-md border border-white/10">
-                {SKILL_ICONS[skill.icon]}
+    <Section id="skills">
+      <SectionHead eyebrow="02 — Toolkit" title="Technical expertise" />
+      <div className="grid sm:grid-cols-2 gap-4">
+        {skillGroups.map((g, i) => (
+          <Reveal key={g.category} delay={(i % 2) * 0.05}>
+            <div className="card card-hover h-full p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <span className="grid place-items-center w-10 h-10 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  {SKILL_ICONS[g.icon]}
+                </span>
+                <h3 className="text-h3 font-display font-semibold text-white">{g.category}</h3>
               </div>
-              <h3 className="text-h3 font-display font-bold mb-6 text-white drop-shadow-md">{skill.category}</h3>
-              <div className="flex flex-wrap gap-3 mt-auto">
-                {skill.items.map((item) => (
-                  <span key={item} className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-sm md:text-base font-medium text-zinc-200 backdrop-blur-md shadow-inner">
-                    {item}
-                  </span>
+              <div className="flex flex-wrap gap-2">
+                {g.items.map((item) => (
+                  <span key={item} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-sm text-zinc-300">{item}</span>
                 ))}
               </div>
             </div>
-          </Tilt>
+          </Reveal>
         ))}
       </div>
-    </ZoomSection>
+    </Section>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Experience                                                             */
-/* ----------------------------------------------------------------------- */
-function ExperienceSection() {
+/* --------------------------------------------------------------------- */
+/*  Experience                                                           */
+/* --------------------------------------------------------------------- */
+function Experience() {
   return (
-    <ZoomSection id="experience" className="py-24 md:py-40 px-6 md:px-12 relative">
-      <SectionHeader title="04 // Trajectory" subtitle="Professional Experience." />
-      <div className="max-w-5xl">
+    <Section id="experience">
+      <SectionHead eyebrow="03 — Trajectory" title="Professional experience" />
+      <div className="space-y-4">
         {experienceData.map((exp, i) => (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
-            key={i}
-            className="mb-8 glass-panel p-8 md:p-10 rounded-3xl group hover-target border border-white/5 hover:border-cyan-500/30 transition-all duration-500 shadow-xl"
-          >
-            <div className="flex flex-col md:flex-row justify-between md:items-start mb-5 gap-4">
-              <div>
-                <h3 className="text-h3 font-display font-bold text-white group-hover:text-cyan-400 transition-colors drop-shadow-md">{exp.role}</h3>
-                <div className="text-lg md:text-xl text-zinc-400 mt-3 flex items-center gap-2 font-medium">
-                  <Building2 className="w-5 h-5 text-cyan-500" /> {exp.company}
+          <Reveal key={i} delay={Math.min(i * 0.04, 0.2)}>
+            <div className="card card-hover p-6 md:p-7">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-h3 font-display font-semibold text-white">{exp.role}</h3>
+                  <div className="flex items-center gap-2 text-zinc-400 mt-1.5 text-sm">
+                    <Building2 className="w-4 h-4 text-sky-400" /> {exp.company}
+                  </div>
+                </div>
+                <div className="flex flex-col md:items-end gap-1.5 shrink-0">
+                  <span className="rounded-full border border-sky-500/25 bg-sky-500/10 text-sky-200 text-xs font-mono px-3 py-1">{exp.period}</span>
+                  <span className="text-xs text-zinc-500 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {exp.location}</span>
                 </div>
               </div>
-              <div className="flex flex-col md:items-end text-sm font-mono tracking-widest text-zinc-400 uppercase font-medium shrink-0">
-                <span className="text-cyan-100 bg-cyan-900/30 border border-cyan-500/30 px-4 py-1.5 rounded-full mb-2 backdrop-blur-md">{exp.period}</span>
-                <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {exp.location}</span>
-              </div>
+              <ul className="space-y-2">
+                {exp.description.map((b, idx) => (
+                  <li key={idx} className="text-body text-zinc-300 flex gap-3">
+                    <span className="text-sky-400 mt-2 h-1 w-1 rounded-full bg-sky-400 shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-3 mt-6">
-              {exp.description.map((b, idx) => (
-                <li key={idx} className="text-zinc-200 text-body flex items-start gap-4">
-                  <span className="text-cyan-500 mt-1.5 opacity-80 text-sm">◆</span>
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+          </Reveal>
         ))}
       </div>
-    </ZoomSection>
+    </Section>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Training & Teaching                                                    */
-/* ----------------------------------------------------------------------- */
-function TrainingSection() {
+/* --------------------------------------------------------------------- */
+/*  Training                                                             */
+/* --------------------------------------------------------------------- */
+function Training() {
   return (
-    <ZoomSection id="training" className="py-24 md:py-40 px-6 md:px-12 relative bg-black/40 border-y border-white/5 backdrop-blur-xl">
-      <SectionHeader title="05 // Capability Building" subtitle="Training & Teaching." />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl">
-        {/* Training timeline */}
-        <div className="lg:col-span-2 space-y-6">
+    <Section id="training">
+      <SectionHead eyebrow="04 — Capability building" title="Training & teaching" intro="I don't just build — I upskill teams. Instructor-led programs plus hands-on mentoring, in English and Urdu." />
+      <div className="grid lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
           {trainingData.map((t, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="glass-panel p-7 md:p-8 rounded-3xl border border-white/10 hover:border-cyan-500/30 transition-colors group"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-cyan-500/20 transition-colors">
-                  <Presentation className="w-5 h-5 text-cyan-400" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 mb-2">
-                    <h3 className="text-lg md:text-xl font-display font-bold text-white group-hover:text-cyan-300 transition-colors">{t.role}</h3>
-                    <span className="text-xs font-mono uppercase tracking-widest text-cyan-200/80 shrink-0">{t.period}</span>
+            <Reveal key={i} delay={Math.min(i * 0.04, 0.15)}>
+              <div className="card card-hover p-6">
+                <div className="flex items-start gap-4">
+                  <span className="grid place-items-center w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 shrink-0">
+                    <Presentation className="w-5 h-5" />
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1">
+                      <h3 className="text-h3 font-display font-semibold text-white">{t.role}</h3>
+                      <span className="text-xs font-mono text-sky-300 shrink-0">{t.period}</span>
+                    </div>
+                    <p className="text-sm text-zinc-500 mb-3">{t.org} · {t.location}</p>
+                    <ul className="space-y-1.5">
+                      {t.points.map((p, idx) => (
+                        <li key={idx} className="text-sm text-zinc-300 flex gap-2.5">
+                          <span className="text-sky-400 mt-1.5 h-1 w-1 rounded-full bg-sky-400 shrink-0" />
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <p className="text-sm text-zinc-400 font-medium mb-4">{t.org} · {t.location}</p>
-                  <ul className="space-y-2">
-                    {t.points.map((p, idx) => (
-                      <li key={idx} className="text-zinc-300 text-sm md:text-base flex items-start gap-3">
-                        <span className="text-cyan-500 mt-1 text-xs">◆</span>
-                        <span>{p}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               </div>
-            </motion.div>
+            </Reveal>
           ))}
         </div>
-
-        {/* Course modules */}
-        <Tilt className="h-full" intensity={4}>
-          <div className="glass-panel p-8 rounded-3xl border border-white/10 h-full shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-600/10 blur-[80px] rounded-full pointer-events-none" />
-            <div className="flex items-center gap-3 mb-8 relative z-10">
-              <Layers className="w-6 h-6 text-cyan-400" />
-              <h3 className="text-h3 font-display font-bold text-white">Modules I Teach</h3>
+        <Reveal delay={0.1}>
+          <div className="card h-full p-6">
+            <div className="flex items-center gap-2.5 mb-5">
+              <Layers className="w-5 h-5 text-sky-400" />
+              <h3 className="text-h3 font-display font-semibold text-white">Modules I teach</h3>
             </div>
-            <ul className="space-y-4 relative z-10">
+            <ul className="space-y-3">
               {courseModules.map((m, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm md:text-base text-zinc-200">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-500 mt-1 shrink-0" />
+                <li key={i} className="flex gap-2.5 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-sky-400 mt-0.5 shrink-0" />
                   <span>{m}</span>
                 </li>
               ))}
             </ul>
           </div>
-        </Tilt>
+        </Reveal>
       </div>
-    </ZoomSection>
+    </Section>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Projects — client delivery + GitHub                                    */
-/* ----------------------------------------------------------------------- */
-function ProjectsSection() {
+/* --------------------------------------------------------------------- */
+/*  Projects                                                             */
+/* --------------------------------------------------------------------- */
+function Projects() {
   return (
-    <ZoomSection id="projects" className="py-24 md:py-40 px-6 md:px-12 relative">
-      <SectionHeader title="06 // Case Studies" subtitle="Flagship Projects." />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-[1400px]">
+    <Section id="projects">
+      <SectionHead eyebrow="05 — Selected work" title="Flagship projects" />
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {clientProjects.map((p, i) => (
-          <ClientCard key={i} project={p} index={i} />
+          <Reveal key={p.title} delay={(i % 3) * 0.05}>
+            <div className="card card-hover h-full p-6 flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <span className="rounded-full bg-white/5 border border-white/10 text-[11px] font-mono uppercase tracking-wide text-zinc-300 px-2.5 py-1">{p.client}</span>
+                <BarChart3 className="w-4 h-4 text-sky-400" />
+              </div>
+              <h3 className="text-h3 font-display font-semibold text-white mb-2">{p.title}</h3>
+              <p className="text-sm text-zinc-400 flex-1">{p.description}</p>
+              <p className="text-sm text-sky-300 mt-3 flex gap-2">
+                <Sparkles className="w-4 h-4 mt-0.5 shrink-0" /> {p.impact}
+              </p>
+              <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-white/5">
+                {p.tech.map((t) => (
+                  <span key={t} className="text-[11px] font-mono rounded-full bg-sky-500/10 border border-sky-500/15 text-sky-200 px-2 py-0.5">{t}</span>
+                ))}
+              </div>
+            </div>
+          </Reveal>
         ))}
       </div>
 
-      {/* GitHub projects */}
-      <div className="mt-20 md:mt-24">
-        <div className="flex items-center gap-3 mb-10">
-          <GitBranch className="w-6 h-6 text-cyan-400" />
-          <h3 className="text-h3 font-display font-bold text-white">Open-Source & Code</h3>
-          <a href={profile.github} target="_blank" rel="noreferrer" className="ml-auto text-sm font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 hover-target">
+      <div className="mt-14">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="flex items-center gap-2.5">
+            <GitBranch className="w-5 h-5 text-sky-400" />
+            <h3 className="text-h3 font-display font-semibold text-white">Open-source & code</h3>
+          </div>
+          <a href={profile.github} target="_blank" rel="noreferrer" className="text-sm text-sky-400 hover:text-sky-300 flex items-center gap-1.5">
             github.com/syedjawaadali <ExternalLink className="w-4 h-4" />
           </a>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 max-w-[1400px]">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
           {githubProjects.map((g, i) => (
-            <motion.a
-              key={g.name}
-              href={g.url}
-              target="_blank"
-              rel="noreferrer"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.4, delay: (i % 3) * 0.06 }}
-              className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan-500/40 transition-all group hover-target flex flex-col"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 font-mono text-cyan-300 font-bold text-sm md:text-base">
-                  <Github className="w-4 h-4" /> {g.name}
+            <Reveal key={g.name} delay={(i % 3) * 0.04}>
+              <a href={g.url} target="_blank" rel="noreferrer" className="card card-hover block h-full p-5 group">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="flex items-center gap-2 font-mono text-sky-300 text-sm font-medium"><Github className="w-4 h-4" /> {g.name}</span>
+                  <ArrowUpRight className="w-4 h-4 text-zinc-500 group-hover:text-sky-400 transition-colors" />
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-zinc-500 group-hover:text-cyan-400 transition-colors" />
-              </div>
-              <p className="text-sm text-zinc-400 flex-1">{g.description}</p>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {g.tech.map((t) => (
-                  <span key={t} className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-300">{t}</span>
-                ))}
-              </div>
-            </motion.a>
+                <p className="text-sm text-zinc-400">{g.description}</p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {g.tech.map((t) => (
+                    <span key={t} className="text-[11px] font-mono rounded-full bg-white/5 border border-white/10 text-zinc-300 px-2 py-0.5">{t}</span>
+                  ))}
+                </div>
+              </a>
+            </Reveal>
           ))}
         </div>
       </div>
-    </ZoomSection>
+    </Section>
   );
 }
 
-function ClientCard({ project, index }: { project: typeof clientProjects[number]; index: number }) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const mx = useSpring(x, { stiffness: 300, damping: 30 });
-  const my = useSpring(y, { stiffness: 300, damping: 30 });
-  const rotateX = useTransform(my, [-0.5, 0.5], ['7deg', '-7deg']);
-  const rotateY = useTransform(mx, [-0.5, 0.5], ['-7deg', '7deg']);
-
-  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    x.set((e.clientX - rect.left) / rect.width - 0.5);
-    y.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-  const onLeave = () => { x.set(0); y.set(0); };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.6, delay: index * 0.08 }}
-      className="w-full h-full"
-    >
-      <motion.div
-        onMouseMove={onMove}
-        onMouseLeave={onLeave}
-        style={{ rotateX, rotateY }}
-        className="w-full h-full min-h-[420px] glass-panel rounded-[2rem] p-8 md:p-9 flex flex-col justify-between group hover-target relative overflow-hidden shadow-2xl border border-white/10 hover:border-white/30 transition-all duration-300 md:hover:scale-[1.02]"
-      >
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-cyan-500/20 blur-[60px] rounded-full group-hover:bg-blue-500/40 transition-colors duration-700 pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 blur-[60px] rounded-full group-hover:bg-cyan-500/20 transition-colors duration-700 pointer-events-none" />
-
-        <div className="relative z-10">
-          <div className="flex justify-between items-start mb-6">
-            <span className="px-4 py-2 rounded-full bg-white/10 border border-white/10 text-xs font-mono tracking-widest uppercase text-white font-medium shadow-sm backdrop-blur-md">
-              {project.client}
-            </span>
-            <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-black/40 backdrop-blur-xl group-hover:bg-white group-hover:text-black transition-colors">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-          </div>
-          <h3 className="text-h3 font-display font-bold mb-4 text-white drop-shadow-md">{project.title}</h3>
-          <p className="text-zinc-300 text-body font-medium">{project.description}</p>
-          <p className="mt-4 text-sm text-cyan-300/90 flex items-start gap-2">
-            <Sparkles className="w-4 h-4 mt-0.5 shrink-0" /> {project.impact}
-          </p>
-        </div>
-
-        <div className="mt-8 border-t border-white/20 pt-5 relative z-10">
-          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest block mb-2.5 font-bold">Stack</span>
-          <div className="flex flex-wrap gap-2">
-            {project.tech.map((t) => (
-              <span key={t} className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-cyan-900/20 border border-cyan-500/20 text-cyan-200">{t}</span>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/* ----------------------------------------------------------------------- */
-/*  Dashboard gallery (lightbox)                                           */
-/* ----------------------------------------------------------------------- */
-function DashboardGallery() {
+/* --------------------------------------------------------------------- */
+/*  Dashboard gallery                                                    */
+/* --------------------------------------------------------------------- */
+function Gallery() {
   const [active, setActive] = useState<number | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setActive(null); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
+    if (active !== null) {
+      window.addEventListener('keydown', onKey);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [active]);
 
   return (
-    <ZoomSection id="dashboards" className="py-24 md:py-40 px-6 md:px-12 relative bg-black/40 border-y border-white/5 backdrop-blur-xl">
-      <SectionHeader title="07 // Visual Proof" subtitle="BI Dashboard Gallery." />
-      <p className="text-body text-zinc-400 max-w-3xl -mt-8 mb-14">
-        A selection of production Power BI & Tableau dashboards across telecom, retail, HR, public sector and finance. Click any dashboard to view in detail.
-      </p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-[1500px]">
+    <Section id="dashboards" className="border-y border-white/5 bg-white/[0.015]">
+      <SectionHead
+        eyebrow="06 — Visual proof"
+        title="BI dashboard gallery"
+        intro="A selection of production Power BI & Tableau dashboards across telecom, retail, HR, public sector and finance. Tap any to enlarge."
+      />
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {dashboards.map((d, i) => (
-          <motion.button
-            key={d.title}
-            onClick={() => setActive(i)}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-40px' }}
-            transition={{ duration: 0.4, delay: (i % 3) * 0.06 }}
-            className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-cyan-500/50 transition-all hover-target text-left bg-black/50"
-          >
-            <div className="aspect-[16/10] overflow-hidden">
-              <img
-                src={d.src}
-                alt={d.title}
-                loading="lazy"
-                className="w-full h-full object-cover object-top opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-              />
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent pointer-events-none" />
-            <div className="absolute bottom-0 left-0 right-0 p-5">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-200">{d.tool}</span>
-                {d.tags.slice(0, 1).map((t) => (
-                  <span key={t} className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">{t}</span>
-                ))}
+          <Reveal key={d.title} delay={(i % 3) * 0.04}>
+            <button
+              onClick={() => setActive(i)}
+              className="group block w-full text-left rounded-xl overflow-hidden border border-white/10 hover:border-sky-500/40 transition-colors card-hover"
+            >
+              <div className="aspect-[16/10] overflow-hidden bg-black/40">
+                <img
+                  src={d.thumb}
+                  alt={d.title}
+                  width={820} height={512}
+                  loading="lazy" decoding="async"
+                  className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                />
               </div>
-              <h3 className="font-display font-bold text-white text-base md:text-lg">{d.title}</h3>
-            </div>
-            <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md">
-              <ArrowUpRight className="w-4 h-4 text-white" />
-            </div>
-          </motion.button>
+              <div className="flex items-center justify-between gap-2 p-4">
+                <div className="min-w-0">
+                  <h3 className="font-display font-semibold text-white text-sm truncate">{d.title}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] font-mono uppercase tracking-wide text-sky-300">{d.tool}</span>
+                    <span className="text-[10px] font-mono uppercase tracking-wide text-zinc-500">{d.tags[0]}</span>
+                  </div>
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-zinc-500 group-hover:text-sky-400 transition-colors shrink-0" />
+              </div>
+            </button>
+          </Reveal>
         ))}
       </div>
 
       <AnimatePresence>
         {active !== null && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setActive(null)}
-            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-10 cursor-pointer"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-8"
           >
-            <button
-              onClick={() => setActive(null)}
-              className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-black transition-colors z-10"
-              aria-label="Close"
-            >
+            <button onClick={() => setActive(null)} className="absolute top-5 right-5 w-11 h-11 grid place-items-center rounded-full bg-white/10 border border-white/20 text-white hover:bg-white hover:text-black transition-colors z-10" aria-label="Close">
               <X className="w-5 h-5" />
             </button>
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              onClick={(e) => e.stopPropagation()}
-              className="max-w-6xl w-full cursor-default"
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.25 }} onClick={(e) => e.stopPropagation()}
+              className="max-w-5xl w-full"
             >
-              <img src={dashboards[active].src} alt={dashboards[active].title} className="w-full rounded-2xl border border-white/10 shadow-2xl max-h-[78vh] object-contain bg-black" />
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <span className="text-xs font-mono uppercase tracking-widest px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-200">{dashboards[active].tool}</span>
-                <h3 className="font-display font-bold text-white text-xl">{dashboards[active].title}</h3>
-                <div className="flex gap-2 ml-auto">
+              <img src={dashboards[active].src} alt={dashboards[active].title} className="w-full rounded-xl border border-white/10 max-h-[78vh] object-contain bg-black" />
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <span className="text-xs font-mono uppercase tracking-wide rounded-full bg-sky-500/15 border border-sky-400/25 text-sky-200 px-3 py-1">{dashboards[active].tool}</span>
+                <h3 className="font-display font-semibold text-white">{dashboards[active].title}</h3>
+                <div className="ml-auto flex gap-2">
                   {dashboards[active].tags.map((t) => (
-                    <span key={t} className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 border border-white/10 px-2.5 py-1 rounded-full">{t}</span>
+                    <span key={t} className="text-[11px] font-mono uppercase tracking-wide text-zinc-400 border border-white/10 rounded-full px-2.5 py-1">{t}</span>
                   ))}
                 </div>
               </div>
@@ -693,138 +521,133 @@ function DashboardGallery() {
           </motion.div>
         )}
       </AnimatePresence>
-    </ZoomSection>
+    </Section>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Education + FYP + Certifications                                       */
-/* ----------------------------------------------------------------------- */
-function EducationSection() {
+/* --------------------------------------------------------------------- */
+/*  Education + FYP + Certs                                              */
+/* --------------------------------------------------------------------- */
+function EducationBlock() {
   return (
-    <ZoomSection className="py-24 md:py-40 px-6 md:px-12 relative">
-      <SectionHeader title="08 // Background" subtitle="Education & Credentials." />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-6xl">
+    <Section>
+      <SectionHead eyebrow="07 — Background" title="Education & credentials" />
+      <div className="grid lg:grid-cols-2 gap-5">
         {/* Education + FYP */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {education.map((e) => (
-            <Tilt key={e.degree}>
-              <div className="flex flex-col md:flex-row items-start gap-6 group hover-target glass-panel p-8 rounded-3xl border border-white/10">
-                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-cyan-500/20 transition-colors shadow-lg">
-                  <GraduationCap className="w-8 h-8 text-cyan-400" />
-                </div>
+            <Reveal key={e.degree}>
+              <div className="card card-hover p-6 flex gap-4">
+                <span className="grid place-items-center w-12 h-12 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0">
+                  <GraduationCap className="w-6 h-6" />
+                </span>
                 <div>
-                  <h3 className="text-h3 font-display font-bold mb-2 text-white drop-shadow-md">{e.degree}</h3>
-                  <p className="text-zinc-300 mb-4 font-medium text-lg">{e.school}</p>
-                  <div className="flex flex-wrap gap-4 text-xs font-mono uppercase tracking-widest text-zinc-400 font-bold">
-                    <span className="text-cyan-300 bg-cyan-900/30 px-3 py-1 rounded-md border border-cyan-500/30">{e.grade}</span>
-                    <span className="bg-white/10 px-3 py-1 rounded-md border border-white/10">{e.period}</span>
+                  <h3 className="text-h3 font-display font-semibold text-white">{e.degree}</h3>
+                  <p className="text-sm text-zinc-400 mt-1">{e.school}</p>
+                  <div className="flex flex-wrap gap-2 mt-3 text-xs font-mono">
+                    <span className="rounded bg-sky-500/10 border border-sky-500/20 text-sky-200 px-2 py-0.5">{e.grade}</span>
+                    <span className="rounded bg-white/5 border border-white/10 text-zinc-400 px-2 py-0.5">{e.period}</span>
                   </div>
                 </div>
               </div>
-            </Tilt>
+            </Reveal>
           ))}
-
-          {/* Final Year Project */}
-          <Tilt>
-            <div className="glass-panel p-8 rounded-3xl border border-white/10 group hover-target relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/10 blur-[70px] rounded-full pointer-events-none" />
-              <div className="flex items-center gap-3 mb-3 relative z-10">
-                <Award className="w-6 h-6 text-indigo-400" />
-                <span className="text-xs font-mono uppercase tracking-[0.25em] text-indigo-300 font-bold">Final Year Project</span>
+          <Reveal>
+            <div className="card p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Award className="w-5 h-5 text-indigo-300" />
+                <span className="text-xs font-mono uppercase tracking-[0.2em] text-indigo-300">Final year project</span>
               </div>
-              <h3 className="text-h3 font-display font-bold mb-3 text-white relative z-10">{finalYearProject.title}</h3>
-              <p className="text-body text-zinc-400 relative z-10">{finalYearProject.summary}</p>
-              <div className="flex flex-wrap gap-2 mt-5 relative z-10">
+              <h3 className="text-h3 font-display font-semibold text-white mb-2">{finalYearProject.title}</h3>
+              <p className="text-body text-zinc-400">{finalYearProject.summary}</p>
+              <div className="flex flex-wrap gap-1.5 mt-4">
                 {finalYearProject.tech.map((t) => (
-                  <span key={t} className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-300">{t}</span>
+                  <span key={t} className="text-[11px] font-mono rounded-full bg-white/5 border border-white/10 text-zinc-300 px-2 py-0.5">{t}</span>
                 ))}
               </div>
             </div>
-          </Tilt>
+          </Reveal>
         </div>
 
-        {/* Certifications */}
-        <div className="space-y-6">
-          <div className="glass-panel p-8 md:p-10 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden hover-target">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-600/10 blur-[80px] rounded-full pointer-events-none" />
-            <div className="flex items-center gap-4 mb-8 relative z-10">
-              <Award className="w-7 h-7 text-cyan-400" />
-              <h3 className="text-h3 font-display font-bold text-white">Certifications</h3>
+        {/* Certs */}
+        <div className="space-y-4">
+          <Reveal>
+            <div className="card p-6">
+              <div className="flex items-center gap-2.5 mb-5">
+                <Award className="w-5 h-5 text-sky-400" />
+                <h3 className="text-h3 font-display font-semibold text-white">Certifications</h3>
+              </div>
+              <ul className="space-y-3">
+                {certifications.map((c, i) => (
+                  <li key={i} className="flex gap-3 text-body text-zinc-300">
+                    <CheckCircle2 className="w-4 h-4 text-sky-400 mt-0.5 shrink-0" /> {c}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-5 relative z-10">
-              {certifications.map((c, i) => (
-                <li key={i} className="flex items-start gap-4 text-body text-zinc-200 font-medium">
-                  <CheckCircle2 className="w-5 h-5 text-cyan-500 mt-0.5 shrink-0" />
-                  {c}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="glass-panel p-8 rounded-3xl border border-white/10 hover-target">
-            <div className="flex items-center gap-3 mb-6">
-              <Clock className="w-6 h-6 text-amber-400" />
-              <h3 className="text-xl font-display font-bold text-white">In Progress</h3>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <div className="card p-6">
+              <div className="flex items-center gap-2.5 mb-4">
+                <Clock className="w-5 h-5 text-amber-400" />
+                <h3 className="text-h3 font-display font-semibold text-white">In progress</h3>
+              </div>
+              <ul className="space-y-2.5">
+                {certificationsInProgress.map((c, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-zinc-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400/80 mt-1.5 shrink-0" /> {c}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-4">
-              {certificationsInProgress.map((c, i) => (
-                <li key={i} className="flex items-start gap-3 text-zinc-300">
-                  <span className="w-2 h-2 rounded-full bg-amber-400/80 mt-2 shrink-0" />
-                  {c}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="glass-panel p-8 rounded-3xl border border-white/10">
-            <h3 className="text-sm font-mono uppercase tracking-widest text-cyan-400 mb-4 font-bold">Also worth knowing</h3>
-            <p className="text-sm text-zinc-300 mb-3"><span className="text-white font-medium">Languages:</span> {additionalInfo.languages}</p>
-            <p className="text-sm text-zinc-300"><span className="text-white font-medium">Sectors:</span> {additionalInfo.sectors}</p>
-          </div>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <div className="card p-6">
+              <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-sky-400 mb-3">Also worth knowing</h3>
+              <p className="text-sm text-zinc-300 mb-2"><span className="text-white font-medium">Languages:</span> {additionalInfo.languages}</p>
+              <p className="text-sm text-zinc-300"><span className="text-white font-medium">Sectors:</span> {additionalInfo.sectors}</p>
+            </div>
+          </Reveal>
         </div>
       </div>
-    </ZoomSection>
+    </Section>
   );
 }
 
-/* ----------------------------------------------------------------------- */
-/*  Footer / contact                                                       */
-/* ----------------------------------------------------------------------- */
+/* --------------------------------------------------------------------- */
+/*  Footer                                                               */
+/* --------------------------------------------------------------------- */
 function Footer() {
   return (
-    <footer id="contact" className="py-28 md:py-32 px-6 md:px-12 border-t border-white/10 bg-[#020202] flex flex-col items-center justify-center relative overflow-hidden">
-      <div className="absolute top-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-500/80 to-transparent" />
+    <footer id="contact" className="border-t border-white/5 py-20 md:py-24">
+      <Container>
+        <div className="max-w-2xl">
+          <span className="font-mono text-xs uppercase tracking-[0.25em] text-sky-400">08 — Get in touch</span>
+          <h2 className="text-h2 font-display font-bold text-white mt-3">Let's build something data-driven.</h2>
+          <p className="text-body text-zinc-400 mt-4">Open to BI, analytics and data-engineering roles, consulting engagements, and training programs.</p>
+        </div>
 
-      <span className="font-mono text-cyan-500 uppercase tracking-[0.3em] text-xs md:text-sm font-bold mb-8">09 // Get in touch</span>
-      <h2 className="text-hero font-display font-bold text-stroke opacity-60 mb-14 hover:opacity-100 transition-all duration-700 select-none cursor-default hover-target text-center">
-        LET'S TALK.
-      </h2>
+        <div className="flex flex-wrap gap-3 mt-8">
+          <a href={`mailto:${profile.email}`} className="inline-flex items-center gap-2 rounded-full bg-sky-500 hover:bg-sky-400 text-[#06121b] font-semibold text-sm px-5 py-2.5 transition-colors">
+            <Mail className="w-4 h-4" /> {profile.email}
+          </a>
+          <a href={`tel:${profile.phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-2 rounded-full border border-white/15 text-white text-sm px-5 py-2.5 hover:bg-white/5 transition-colors">
+            <Phone className="w-4 h-4" /> {profile.phone}
+          </a>
+          <a href={profile.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/15 text-white text-sm px-5 py-2.5 hover:bg-white/5 transition-colors">
+            <Linkedin className="w-4 h-4" /> LinkedIn
+          </a>
+          <a href={profile.github} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/15 text-white text-sm px-5 py-2.5 hover:bg-white/5 transition-colors">
+            <Github className="w-4 h-4" /> GitHub
+          </a>
+        </div>
 
-      <div className="flex flex-wrap justify-center gap-7 md:gap-14 z-10 mb-20">
-        <SocialLink href={`mailto:${profile.email}`} icon={<Mail className="w-7 h-7" />} label="Email" />
-        <SocialLink href={`tel:${profile.phone.replace(/\s/g, '')}`} icon={<Phone className="w-7 h-7" />} label="Call" />
-        <SocialLink href={profile.linkedin} icon={<Linkedin className="w-7 h-7" />} label="LinkedIn" />
-        <SocialLink href={profile.github} icon={<Github className="w-7 h-7" />} label="GitHub" />
-      </div>
-
-      <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-between text-xs font-mono text-zinc-500 tracking-widest uppercase gap-4 text-center md:text-left font-bold">
-        <p>© 2026 {profile.name.toUpperCase()}</p>
-        <p>{profile.location} · {profile.email}</p>
-        <p>Data Engineering & Analytics</p>
-      </div>
+        <div className="mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs font-mono text-zinc-600 uppercase tracking-wider">
+          <span>© 2026 {profile.name}</span>
+          <span>{profile.location}</span>
+          <span>Data Engineering & Analytics</span>
+        </div>
+      </Container>
     </footer>
-  );
-}
-
-function SocialLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer" className="group flex flex-col items-center hover:text-cyan-400 transition-colors hover-target">
-      <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border border-white/10 flex items-center justify-center group-hover:border-cyan-400 mb-5 transition-all duration-300 glass-panel group-hover:bg-cyan-900/30 group-hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] group-hover:scale-110">
-        <div className="text-zinc-300 group-hover:text-cyan-400 transition-colors">{icon}</div>
-      </div>
-      <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400 group-hover:text-cyan-400 transition-colors font-bold">{label}</span>
-    </a>
   );
 }

@@ -331,26 +331,30 @@ export const githubProjects = [
 
 // Visual BI dashboard gallery (images extracted from BI portfolio)
 const img = (file: string) => `${import.meta.env.BASE_URL}dashboards/${file}`;
+const thumb = (file: string) => `${import.meta.env.BASE_URL}dashboards/thumbs/${file}`;
+const dash = (title: string, tool: string, tags: string[], file: string) => ({
+  title, tool, tags, src: img(file), thumb: thumb(file),
+});
 export const dashboards = [
-  { title: "Telecom FCA / Recharge Summary", tool: "Power BI", tags: ["Telecom", "KPI"], src: img("telecom-fca-recharge-summary.jpg") },
-  { title: "FCA & iFCA Monthly Trends", tool: "Power BI", tags: ["Telecom", "Trend"], src: img("telecom-fca-ifca-trends.jpg") },
-  { title: "Estimated Closing Trend", tool: "Power BI", tags: ["Telecom", "Forecast"], src: img("telecom-estimated-closing-trend.jpg") },
-  { title: "Franchise Geo Distribution", tool: "Power BI", tags: ["GIS", "Maps"], src: img("franchise-geo-distribution.jpg") },
-  { title: "MoM / QoQ Change Analysis", tool: "Power BI", tags: ["Variance"], src: img("telecom-mom-qoq-analysis.jpg") },
-  { title: "Regional Sales Performance", tool: "Power BI", tags: ["Sales", "Retail"], src: img("regional-sales-performance.jpg") },
-  { title: "Supply Performance Dashboard", tool: "Power BI", tags: ["Supply Chain"], src: img("supply-performance.jpg") },
-  { title: "Call Center Performance Report", tool: "Power BI", tags: ["Operations"], src: img("call-center-performance.jpg") },
-  { title: "Headcount Analytics", tool: "Power BI", tags: ["HR", "People"], src: img("headcount-analytics.jpg") },
-  { title: "HR Salary & Bonus Analytics", tool: "Power BI", tags: ["HR", "Finance"], src: img("hr-salary-bonus-analytics.jpg") },
-  { title: "Walmart Sales Dashboard", tool: "Power BI", tags: ["Retail", "Sales"], src: img("walmart-sales-dashboard.jpg") },
-  { title: "Walmart Retail Data Analysis", tool: "Power BI", tags: ["Retail", "Profit"], src: img("walmart-retail-analysis.jpg") },
-  { title: "Chocolate Performance Report", tool: "Power BI", tags: ["Sales", "Forecast"], src: img("chocolate-performance-report.jpg") },
-  { title: "Simple Sales Dashboard", tool: "Power BI", tags: ["E-Commerce"], src: img("simple-sales-dashboard.jpg") },
-  { title: "Waikato Housing Dampness", tool: "Tableau", tags: ["Public Sector", "Census"], src: img("waikato-housing-dampness.jpg") },
-  { title: "NYC Emergency Response", tool: "Tableau", tags: ["Public Sector", "Geo"], src: img("nyc-emergency-response.jpg") },
-  { title: "Social Media Campaign", tool: "Tableau", tags: ["Marketing"], src: img("social-media-campaign.jpg") },
-  { title: "Spotify Artists & Songs", tool: "Power BI", tags: ["Entertainment"], src: img("spotify-artists-songs.jpg") },
-  { title: "Financial Complaints Dashboard", tool: "Tableau", tags: ["Banking"], src: img("financial-complaints.jpg") },
+  dash("Telecom FCA / Recharge Summary", "Power BI", ["Telecom", "KPI"], "telecom-fca-recharge-summary.jpg"),
+  dash("FCA & iFCA Monthly Trends", "Power BI", ["Telecom", "Trend"], "telecom-fca-ifca-trends.jpg"),
+  dash("Estimated Closing Trend", "Power BI", ["Telecom", "Forecast"], "telecom-estimated-closing-trend.jpg"),
+  dash("Franchise Geo Distribution", "Power BI", ["GIS", "Maps"], "franchise-geo-distribution.jpg"),
+  dash("MoM / QoQ Change Analysis", "Power BI", ["Variance"], "telecom-mom-qoq-analysis.jpg"),
+  dash("Regional Sales Performance", "Power BI", ["Sales", "Retail"], "regional-sales-performance.jpg"),
+  dash("Supply Performance Dashboard", "Power BI", ["Supply Chain"], "supply-performance.jpg"),
+  dash("Call Center Performance Report", "Power BI", ["Operations"], "call-center-performance.jpg"),
+  dash("Headcount Analytics", "Power BI", ["HR", "People"], "headcount-analytics.jpg"),
+  dash("HR Salary & Bonus Analytics", "Power BI", ["HR", "Finance"], "hr-salary-bonus-analytics.jpg"),
+  dash("Walmart Sales Dashboard", "Power BI", ["Retail", "Sales"], "walmart-sales-dashboard.jpg"),
+  dash("Walmart Retail Data Analysis", "Power BI", ["Retail", "Profit"], "walmart-retail-analysis.jpg"),
+  dash("Chocolate Performance Report", "Power BI", ["Sales", "Forecast"], "chocolate-performance-report.jpg"),
+  dash("Simple Sales Dashboard", "Power BI", ["E-Commerce"], "simple-sales-dashboard.jpg"),
+  dash("Waikato Housing Dampness", "Tableau", ["Public Sector", "Census"], "waikato-housing-dampness.jpg"),
+  dash("NYC Emergency Response", "Tableau", ["Public Sector", "Geo"], "nyc-emergency-response.jpg"),
+  dash("Social Media Campaign", "Tableau", ["Marketing"], "social-media-campaign.jpg"),
+  dash("Spotify Artists & Songs", "Power BI", ["Entertainment"], "spotify-artists-songs.jpg"),
+  dash("Financial Complaints Dashboard", "Tableau", ["Banking"], "financial-complaints.jpg"),
 ];
 
 export const education = [
