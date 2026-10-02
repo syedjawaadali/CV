@@ -1,0 +1,36 @@
+# Render.com blueprint — one-click deploy of the Smart Dukaan API + Postgres.
+#
+# Usage: connect the repository at https://dashboard.render.com/blueprints.
+# Render provisions the database, wires DATABASE_URL, and generates JWT_SECRET.
+# After the API is live, set CORS_ORIGIN to include your web app's domain, then
+# rebuild the mobile app with VITE_API_BASE_URL pointed at the API URL.
+#
+# NOTE: If deploying from a repo where this app lives in a subdirectory, set the
+# service Root Directory to that subdirectory in the Render UI.
+
+databases:
+  - name: smartdukaan-db
+    databaseName: smartdukaan
+    plan: free
+
+services:
+  - type: web
+    name: smartdukaan-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build -w @smartdukaan/server
+    startCommand: node apps/server/dist/migrate.js && node apps/server/dist/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smartdukaan-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # Native app origins (Capacitor). Add your web app's https domain too,
+      # comma-separated, once you deploy the web front-end.
+      - key: CORS_ORIGIN
+        value: https://localhost,capacitor://localhost

@@ -1,0 +1,11 @@
+-- One-time cleanup of "not found" barcode-cache rows.
+--
+-- A negative result cached BEFORE the web-search resolver was configured is
+-- incomplete: it recorded a miss without ever consulting web search. Once web
+-- search is enabled, that stale 7-day negative would keep being served and mask
+-- a now-resolvable product (e.g. 8961100311002 → Hashmi Ispaghol Sachet).
+--
+-- Deleting negatives is safe: they are only a cost/latency optimization. The
+-- next scan simply re-resolves through the full chain (Open Food Facts + web
+-- search) and re-caches. Positive results (found = true) are preserved.
+DELETE FROM external_barcode_cache WHERE found = false;

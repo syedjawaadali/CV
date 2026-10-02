@@ -1,0 +1,11 @@
+.git
+**/node_modules
+**/dist
+apps/web/android
+apps/web/ios
+apps/web/dist
+*.log
+.env
+.env.*
+!.env.example
+scratchpad
